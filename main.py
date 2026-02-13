@@ -160,6 +160,7 @@ st.markdown("""
 </style>
 
 <div class="bottom-watermark">
-  🌸 Crafted with love by Nilay Chauhan 🌸
+  🌸 Created with love by Nilay Chauhan 🌸
 </div>
+
 """, unsafe_allow_html=True)
