@@ -80,7 +80,7 @@ if df is not None:
         if st.button("Plot Pie Chart"):
             fig, ax = plt.subplots(figsize=(8, 8))
             ax.pie(df[values_col], labels=df[labels_col], autopct='%1.1f%%', colors=[color, '#ff7f0e', '#2ca02c', '#d62728'])
-            ax.set_title(f"Pie Chart: {values_col}")
+            ax.set_title(title)
             st.pyplot(fig)
             st.balloons()
     
@@ -113,6 +113,7 @@ if df is not None:
             ax.plot(df[x_axis], df[y_axis], color=color, linestyle=linestyle_map[line_style], marker=marker_map[marker_style])
             ax.set_xlabel(x_axis)
             ax.set_ylabel(y_axis)
+            ax.set_title(title)
             ax.tick_params(axis='x', rotation=45)
             if show_grid:
                 ax.grid(True, linestyle=':', alpha=0.7)
@@ -132,6 +133,7 @@ if df is not None:
             ax.scatter(df[x_axis], df[y_axis], color=color, marker=marker_map[marker_style])
             ax.set_xlabel(x_axis)
             ax.set_ylabel(y_axis)
+            ax.set_title(title)
             ax.tick_params(axis='x', rotation=45)
             if show_grid:
                 ax.grid(True, linestyle=':', alpha=0.7)
@@ -167,5 +169,6 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
