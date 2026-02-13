@@ -7,7 +7,7 @@ import time
 # Dopamine music
 import streamlit as st
 
-st.set_page_config(page_title="Graph Creator", layout="wide")
+st.set_page_config(page_title="Graphico", layout="wide")
 
 st.title("Create Anytime, Anywhere")
 st.subheader("Upload your data and make beautiful graphs instantly!")
@@ -50,6 +50,7 @@ st.sidebar.write("Wan't a music? ")
 st.sidebar.audio("music.mp3", loop=True)
 
 if df is not None:
+    title = st.text_input("Set a title for your graph")
     columns = list(df.columns)
     
     color = st.sidebar.color_picker("Choose color", value="#1f77b4")
@@ -64,6 +65,7 @@ if df is not None:
             ax.bar(df[x_axis], df[y_axis], color=color)
             ax.set_xlabel(x_axis)
             ax.set_ylabel(y_axis)
+            ax.set_title(title)
             ax.tick_params(axis='x', rotation=45)
             if show_grid:
                 ax.grid(True, linestyle=':', alpha=0.7)
@@ -89,6 +91,7 @@ if df is not None:
         if st.button("Plot Histogram"):
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.hist(df[col], bins=bins, color=color, edgecolor='black')
+            ax.set_title(title)
             ax.set_xlabel(col)
             ax.set_ylabel("Frequency")
             if show_grid:
@@ -164,4 +167,5 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
