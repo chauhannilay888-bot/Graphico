@@ -2,7 +2,6 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
 import json as js
-import time
 
 # Dopamine music
 import streamlit as st
@@ -33,7 +32,6 @@ if uploaded_file is not None:
             df = None
         
         if df is not None:
-            time.sleep(2)
             st.success("Data loaded successfully!")
             st.dataframe(df)  # Preview
         
@@ -169,6 +167,7 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
 
