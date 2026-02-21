@@ -9,7 +9,7 @@ from io import BytesIO
 st.markdown(
     '<meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />',
     unsafe_allow_html=True
-
+)
 # downloading graph
 buf = BytesIO()
 
@@ -225,6 +225,7 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
 
