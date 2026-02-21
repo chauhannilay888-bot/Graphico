@@ -2,10 +2,12 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
 import json as js
+from io import BytesIO
 
-# Dopamine music
-import streamlit as st
+# downloading graph
+buf = BytesIO()
 
+# Basic Config
 st.set_page_config(page_title="Graphico", layout="wide")
 
 st.title("Create Anytime, Anywhere")
@@ -70,6 +72,16 @@ if df is not None:
             plt.tight_layout()
             st.pyplot(fig)
             st.balloons()
+            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+            buf.seek(0)  # Move to the start of the buffer
+
+            # Create a download button
+            st.download_button(
+                label="📥 Download Plot as PNG",
+                data=buf,
+                file_name="Bar_graph.png",
+                mime="image/png"
+            )
     
     elif graph_type == "Pie Chart":
         labels_col = st.selectbox("Labels column", options=columns)
@@ -81,6 +93,16 @@ if df is not None:
             ax.set_title(title)
             st.pyplot(fig)
             st.balloons()
+            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+            buf.seek(0)  # Move to the start of the buffer
+
+            # Create a download button
+            st.download_button(
+                label="📥 Download Plot as PNG",
+                data=buf,
+                file_name="piechart.png",
+                mime="image/png"
+            )
     
     elif graph_type == "Histogram":
         col = st.selectbox("Column for Histogram", options=columns)
@@ -96,6 +118,16 @@ if df is not None:
                 ax.grid(True, linestyle=':', alpha=1)
             st.pyplot(fig)
             st.balloons()
+            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+            buf.seek(0)  # Move to the start of the buffer
+
+            # Create a download button
+            st.download_button(
+                label="📥 Download Plot as PNG",
+                data=buf,
+                file_name="histogram.png",
+                mime="image/png"
+            )
     
     elif graph_type == "Line Graph":
         x_axis = st.selectbox("Horizontal axis (X-axis)", options=columns)
@@ -118,6 +150,16 @@ if df is not None:
             plt.tight_layout()
             st.pyplot(fig)
             st.balloons()
+            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+            buf.seek(0)  # Move to the start of the buffer
+
+            # Create a download button
+            st.download_button(
+                label="📥 Download Plot as PNG",
+                data=buf,
+                file_name="line_graph.png",
+                mime="image/png"
+            )
     
     elif graph_type == "Scatter Plot":
         x_axis = st.selectbox("Horizontal axis (X-axis)", options=columns)
@@ -137,6 +179,16 @@ if df is not None:
                 ax.grid(True, linestyle=':', alpha=1)
             st.pyplot(fig)
             st.balloons()
+            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+            buf.seek(0)  # Move to the start of the buffer
+
+            # Create a download button
+            st.download_button(
+                label="📥 Download Plot as PNG",
+                data=buf,
+                file_name="scatter_plot.png",
+                mime="image/png"
+            )
 
 else:
     st.info("Upload a JSON, CSV, or Excel file to start creating graphs!")
@@ -167,6 +219,7 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
 
