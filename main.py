@@ -6,7 +6,9 @@ from io import BytesIO
 
 # head
 st.markdown("""
+<head>
 <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
+</head>
 """, unsafe_allow_html=True)
 
 # downloading graph
