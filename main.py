@@ -66,7 +66,7 @@ if df is not None:
             ax.set_title(title)
             ax.tick_params(axis='x', rotation=45)
             if show_grid:
-                ax.grid(True, linestyle=':', alpha=0.7)
+                ax.grid(True, linestyle=':', alpha=1)
             plt.tight_layout()
             st.pyplot(fig)
             st.balloons()
@@ -93,7 +93,7 @@ if df is not None:
             ax.set_xlabel(col)
             ax.set_ylabel("Frequency")
             if show_grid:
-                ax.grid(True, linestyle=':', alpha=0.7)
+                ax.grid(True, linestyle=':', alpha=1)
             st.pyplot(fig)
             st.balloons()
     
@@ -114,7 +114,7 @@ if df is not None:
             ax.set_title(title)
             ax.tick_params(axis='x', rotation=45)
             if show_grid:
-                ax.grid(True, linestyle=':', alpha=0.7)
+                ax.grid(True, linestyle=':', alpha=1)
             plt.tight_layout()
             st.pyplot(fig)
             st.balloons()
@@ -134,7 +134,7 @@ if df is not None:
             ax.set_title(title)
             ax.tick_params(axis='x', rotation=45)
             if show_grid:
-                ax.grid(True, linestyle=':', alpha=0.7)
+                ax.grid(True, linestyle=':', alpha=1)
             st.pyplot(fig)
             st.balloons()
 
@@ -167,6 +167,7 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
 
