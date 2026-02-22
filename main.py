@@ -4,11 +4,10 @@ import pandas as pd
 import json as js
 from io import BytesIO
 
-# Google Site Verification (sabse upar, imports ke turant baad)
-st.markdown(
-    '<meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />',
-    unsafe_allow_html=True
-)
+# Google HTML file verification route (Google Search Console ke liye - yeh special URL serve karega)
+if st.experimental_get_query_params().get("google-verification") == ["googlea9edb648053b5bdc.html"]:
+    st.write("google-site-verification=googlea9edb648053b5bdc")
+    st.stop()  # Page yahin ruk jayegi, kuch aur nahi dikhega
 
 # Downloading graph buffer
 buf = BytesIO()
