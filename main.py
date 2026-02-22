@@ -4,17 +4,13 @@ import pandas as pd
 import json as js
 from io import BytesIO
 
-# head
-# Google verification
-st.markdown("""
-<html>
-    <head>
-    <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
-    </head>
-</html>
-""", unsafe_allow_html=True) 
+# Google Site Verification (sabse upar, imports ke turant baad)
+st.markdown(
+    '<meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />',
+    unsafe_allow_html=True
+)
 
-# downloading graph
+# Downloading graph buffer
 buf = BytesIO()
 
 # Basic Config
@@ -45,19 +41,20 @@ if uploaded_file is not None:
         
         if df is not None:
             st.success("Data loaded successfully!")
-            st.dataframe(df)  # Preview
+            st.dataframe(df.head(10))  # Preview first 10 rows
         
     except Exception as e:
         st.error(f"Error loading file: {str(e)}")
         df = None
 
-# Sidebar for graph type
+# Sidebar for graph type + music
 graph_type = st.sidebar.radio(
     "Choose the type of graph",
     options=["Bar Graph", "Pie Chart", "Histogram", "Line Graph", "Scatter Plot"]
 )
-st.sidebar.write("Wan't a music? ")
-st.sidebar.audio("music.mp3", loop=True)
+
+st.sidebar.write("Want some music? 🎵")
+st.sidebar.audio("music.mp3", loop=True, format="audio/mp3")
 
 if df is not None:
     title = st.text_input("Set a title for your graph")
@@ -83,13 +80,11 @@ if df is not None:
             st.pyplot(fig)
             st.balloons()
             fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
-            buf.seek(0)  # Move to the start of the buffer
-
-            # Create a download button
+            buf.seek(0)
             st.download_button(
                 label="📥 Download Plot as PNG",
                 data=buf,
-                file_name="Bar_graph.png",
+                file_name="bar_graph.png",
                 mime="image/png"
             )
     
@@ -104,13 +99,11 @@ if df is not None:
             st.pyplot(fig)
             st.balloons()
             fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
-            buf.seek(0)  # Move to the start of the buffer
-
-            # Create a download button
+            buf.seek(0)
             st.download_button(
                 label="📥 Download Plot as PNG",
                 data=buf,
-                file_name="piechart.png",
+                file_name="pie_chart.png",
                 mime="image/png"
             )
     
@@ -129,9 +122,7 @@ if df is not None:
             st.pyplot(fig)
             st.balloons()
             fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
-            buf.seek(0)  # Move to the start of the buffer
-
-            # Create a download button
+            buf.seek(0)
             st.download_button(
                 label="📥 Download Plot as PNG",
                 data=buf,
@@ -161,9 +152,7 @@ if df is not None:
             st.pyplot(fig)
             st.balloons()
             fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
-            buf.seek(0)  # Move to the start of the buffer
-
-            # Create a download button
+            buf.seek(0)
             st.download_button(
                 label="📥 Download Plot as PNG",
                 data=buf,
@@ -190,9 +179,7 @@ if df is not None:
             st.pyplot(fig)
             st.balloons()
             fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
-            buf.seek(0)  # Move to the start of the buffer
-
-            # Create a download button
+            buf.seek(0)
             st.download_button(
                 label="📥 Download Plot as PNG",
                 data=buf,
@@ -203,11 +190,28 @@ if df is not None:
 else:
     st.info("Upload a JSON, CSV, or Excel file to start creating graphs!")
 
+# Bottom watermark
+st.markdown("""
+<style>
+  .bottom-watermark {
+    position: fixed;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-weight: 500;
+    color: #1e90ff;
+    background: transparent;
+    padding: 5px 15px;
+    border-radius: 8px;
+    z-index: 5;
+    pointer-events: none;
+    user-select: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+</style>
 
-
-
-
-
-
-
-
+<div class="bottom-watermark">
+  🌸 Crafted with love by Nilay Chauhan 🌸
+</div>
+""", unsafe_allow_html=True)
