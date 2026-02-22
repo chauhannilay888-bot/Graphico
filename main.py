@@ -6,9 +6,9 @@ from io import BytesIO
 
 # head
 # Google verification
-st.markdown('''
-    <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
-    ''', unsafe_allow_html=True)
+st.markdown("""
+<meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
+""", unsafe_allow_html=True) 
 
 # downloading graph
 buf = BytesIO()
@@ -198,37 +198,6 @@ if df is not None:
 
 else:
     st.info("Upload a JSON, CSV, or Excel file to start creating graphs!")
-
-# Bottom watermark (blue, transparent)
-st.markdown("""
-<style>
-  .bottom-watermark {
-    position: fixed;
-    bottom: 15px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 14px;
-    font-weight: 500;
-    color: #1e90ff;
-    background: transparent;
-    padding: 5px 15px;
-    border-radius: 8px;
-    z-index: 5;
-    pointer-events: none;
-    user-select: none;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-  }
-</style>
-
-<div class="bottom-watermark">
-  🌸 Crafted with love by Nilay Chauhan 🌸
-</div>
-
-""", unsafe_allow_html=True)
-
-
-
-
 
 
 
