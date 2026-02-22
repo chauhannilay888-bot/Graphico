@@ -4,9 +4,10 @@ import pandas as pd
 import json as js
 from io import BytesIO
 
-# Google HTML file verification route (100% working - full app nahi khulega)
-if "google-verification" in st.query_params:
-    if st.query_params["google-verification"][0] == "googlea9edb648053b5bdc.html":
+# Google HTML file verification route (final working method - full app nahi khulega)
+params = st.query_params
+if "google-verification" in params:
+    if params["google-verification"][0] == "googlea9edb648053b5bdc.html":
         st.markdown("google-site-verification=googlea9edb648053b5bdc")
         st.stop()  # Yeh line ab sahi kaam karegi
 
