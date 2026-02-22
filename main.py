@@ -4,10 +4,11 @@ import pandas as pd
 import json as js
 from io import BytesIO
 
-# Google HTML file verification route (Google Search Console ke liye - yeh special URL serve karega)
-if st.experimental_get_query_params().get("google-verification") == ["googlea9edb648053b5bdc.html"]:
-    st.write("google-site-verification=googlea9edb648053b5bdc")
-    st.stop()  # Page yahin ruk jayegi, kuch aur nahi dikhega
+# Google HTML file verification route (latest method - no experimental warning)
+if "google-verification" in st.query_params:
+    if st.query_params["google-verification"][0] == "googlea9edb648053b5bdc.html":
+        st.write("google-site-verification=googlea9edb648053b5bdc")
+        st.stop()
 
 # Downloading graph buffer
 buf = BytesIO()
