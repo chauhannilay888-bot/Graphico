@@ -7,7 +7,11 @@ from io import BytesIO
 # head
 # Google verification
 st.markdown("""
-<meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
+<html>
+    <head>
+    <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
+    </head>
+</html>
 """, unsafe_allow_html=True) 
 
 # downloading graph
@@ -198,6 +202,7 @@ if df is not None:
 
 else:
     st.info("Upload a JSON, CSV, or Excel file to start creating graphs!")
+
 
 
 
