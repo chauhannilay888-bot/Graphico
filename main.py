@@ -6,7 +6,7 @@ if "google-verification" in params:
     file_name = params["google-verification"][0]
     if file_name == "googlea9edb648053b5bdc.html":
         st.write("google-site-verification=googlea9edb648053b5bdc")
-        st.stop()
+    st.stop()
 
 # other imports
 import matplotlib.pyplot as plt
@@ -219,6 +219,7 @@ st.markdown("""
   🌸 Crafted with love by Nilay Chauhan 🌸
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
