@@ -1,12 +1,12 @@
 import streamlit as st
 
-# Google HTML file verification (working route)
-if "google-verification" in st.query_params:
-    st.write("TEST ROUTE TRIGGERED")  # yeh dikhega agar route chal raha hai
-    file_name = st.query_params["google-verification"][0]
+# Google HTML file verification (final clean version)
+params = st.query_params
+if "google-verification" in params:
+    file_name = params["google-verification"][0]
     if file_name == "googlea9edb648053b5bdc.html":
         st.write("google-site-verification=googlea9edb648053b5bdc")
-    st.stop()
+        st.stop()
 
 # other imports
 import matplotlib.pyplot as plt
@@ -219,6 +219,7 @@ st.markdown("""
   🌸 Crafted with love by Nilay Chauhan 🌸
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
