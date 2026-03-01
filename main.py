@@ -4,13 +4,14 @@ import pandas as pd
 import json as js
 from io import BytesIO
 
-# Google HTML file verification route (final working method - full app nahi khulega)
+# Google HTML file verification (working route)
 params = st.query_params
 if "google-verification" in params:
-    if params["google-verification"][0] == "googlea9edb648053b5bdc.html":
-        st.markdown("google-site-verification=googlea9edb648053b5bdc")
-        st.stop()  # Yeh line ab sahi kaam karegi
-
+    file_name = params["google-verification"][0]
+    if file_name == "googlea9edb648053b5bdc.html":
+        st.write("google-site-verification=googlea9edb648053b5bdc")
+        st.stop()
+        
 # Downloading graph buffer
 buf = BytesIO()
 
@@ -216,3 +217,4 @@ st.markdown("""
   🌸 Crafted with love by Nilay Chauhan 🌸
 </div>
 """, unsafe_allow_html=True)
+
