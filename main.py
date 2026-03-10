@@ -47,50 +47,73 @@ color:transparent;
 st.markdown('<div class="title">Graphico Pro 📊</div>', unsafe_allow_html=True)
 st.write("Upload datasets and generate interactive professional charts.")
 
+px.defaults.template = "plotly_dark"
+
+# ---------------- DATA LOADER ----------------
+
+@st.cache_data
+def load_data(file, ext):
+    if ext == "csv":
+        return pd.read_csv(file)
+    elif ext in ["xlsx", "xls"]:
+        return pd.read_excel(file)
+    elif ext == "json":
+        return pd.read_json(file)
+
 # ---------------- FILE UPLOAD ----------------
 
 uploaded_file = st.file_uploader(
     "Upload dataset",
-    type=["csv","xlsx","xls","json"]
+    type=["csv", "xlsx", "xls", "json"]
 )
 
-df=None
+df = None
 
 if uploaded_file:
 
-    ext=uploaded_file.name.split(".")[-1]
+    ext = uploaded_file.name.split(".")[-1].lower()
 
-    if ext=="csv":
-        df=pd.read_csv(uploaded_file)
+    try:
+        df = load_data(uploaded_file, ext)
+        st.success("Dataset loaded successfully")
+        st.dataframe(df.head())
 
-    elif ext in ["xlsx","xls"]:
-        df=pd.read_excel(uploaded_file)
-
-    elif ext=="json":
-        df=pd.read_json(uploaded_file)
-
-    st.success("Dataset loaded")
-
-    st.dataframe(df.head())
+    except Exception as e:
+        st.error("Error loading file")
+        st.stop()
 
 # ---------------- DATA INSIGHTS ----------------
 
 if df is not None:
 
-    col1,col2,col3=st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Rows",df.shape[0])
+        st.metric("Rows", df.shape[0])
 
     with col2:
-        st.metric("Columns",df.shape[1])
+        st.metric("Columns", df.shape[1])
 
     with col3:
-        st.metric("Missing values",df.isnull().sum().sum())
+        st.metric("Missing values", int(df.isnull().sum().sum()))
+
+# ---------------- FILTER DATA ----------------
+
+    st.subheader("Filter Data")
+
+    filter_col = st.selectbox("Select column to filter", df.columns)
+
+    unique_vals = df[filter_col].dropna().unique()
+
+    selected_vals = st.multiselect(
+        "Values",
+        unique_vals,
+        default=unique_vals
+    )
+
+    df = df[df[filter_col].isin(selected_vals)]
 
 # ---------------- GRAPH SETTINGS ----------------
-
-if df is not None:
 
     st.sidebar.header("Graph Settings")
 
@@ -104,78 +127,105 @@ if df is not None:
             "Pie",
             "Histogram",
             "Box",
-            "Area"
+            "Area",
+            "Heatmap"
         ]
     )
 
-    title=st.sidebar.text_input("Chart Title")
+    title = st.sidebar.text_input("Chart Title")
 
-    numeric_cols=df.select_dtypes(include="number").columns
-    columns=df.columns
+    numeric_cols = df.select_dtypes(include="number").columns
+    columns = df.columns
 
-    x_axis=st.sidebar.selectbox("X Axis",columns)
-    y_axis=st.sidebar.selectbox("Y Axis",numeric_cols)
+    x_axis = st.sidebar.selectbox("X Axis", columns)
+
+    if len(numeric_cols) > 0:
+        y_axis = st.sidebar.selectbox("Y Axis", numeric_cols)
+    else:
+        st.warning("Dataset has no numeric columns")
+        y_axis = None
 
 # ---------------- SMART SUGGESTION ----------------
 
-    if graph_type=="Auto Suggestion":
+    if graph_type == "Auto Suggestion":
 
-        if len(numeric_cols)>=2:
-            graph_type="Scatter"
-
-        elif len(numeric_cols)==1:
-            graph_type="Histogram"
-
+        if len(numeric_cols) >= 2:
+            graph_type = "Scatter"
+        elif len(numeric_cols) == 1:
+            graph_type = "Histogram"
         else:
-            graph_type="Bar"
+            graph_type = "Bar"
 
         st.info(f"Suggested graph: {graph_type}")
 
 # ---------------- PLOTLY CHARTS ----------------
 
-    fig=None
+    fig = None
 
-    if graph_type=="Bar":
+    if y_axis is not None:
 
-        fig=px.bar(df,x=x_axis,y=y_axis,title=title)
+        if graph_type == "Bar":
+            fig = px.bar(df, x=x_axis, y=y_axis, title=title)
 
-    elif graph_type=="Line":
+        elif graph_type == "Line":
+            fig = px.line(df, x=x_axis, y=y_axis, title=title)
 
-        fig=px.line(df,x=x_axis,y=y_axis,title=title)
+        elif graph_type == "Scatter":
+            fig = px.scatter(df, x=x_axis, y=y_axis, title=title)
 
-    elif graph_type=="Scatter":
+        elif graph_type == "Pie":
+            fig = px.pie(df, names=x_axis, values=y_axis, title=title)
 
-        fig=px.scatter(df,x=x_axis,y=y_axis,title=title)
+        elif graph_type == "Histogram":
+            fig = px.histogram(df, x=y_axis, title=title)
 
-    elif graph_type=="Pie":
+        elif graph_type == "Box":
+            fig = px.box(df, x=x_axis, y=y_axis, title=title)
 
-        fig=px.pie(df,names=x_axis,values=y_axis,title=title)
+        elif graph_type == "Area":
+            fig = px.area(df, x=x_axis, y=y_axis, title=title)
 
-    elif graph_type=="Histogram":
+    if graph_type == "Heatmap":
 
-        fig=px.histogram(df,x=y_axis,title=title)
+        corr = df.corr(numeric_only=True)
 
-    elif graph_type=="Box":
-
-        fig=px.box(df,x=x_axis,y=y_axis,title=title)
-
-    elif graph_type=="Area":
-
-        fig=px.area(df,x=x_axis,y=y_axis,title=title)
+        if not corr.empty:
+            fig = px.imshow(
+                corr,
+                text_auto=True,
+                title="Correlation Heatmap"
+            )
+        else:
+            st.warning("No numeric data for heatmap")
 
 # ---------------- DISPLAY CHART ----------------
 
     if fig:
 
-        st.plotly_chart(fig,use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
 
-# ---------------- DOWNLOAD ----------------
+# ---------------- DOWNLOAD GRAPH ----------------
 
-        img_bytes = fig.to_image(format="png")
+        try:
+            img_bytes = fig.to_image(format="png")
 
-        st.download_button(
-            label="Download PNG",
-            data=img_bytes,
-            file_name="graph.png",
-            mime="image/png"
-        )
+            st.download_button(
+                label="Download PNG",
+                data=img_bytes,
+                file_name="graph.png",
+                mime="image/png"
+            )
+
+        except:
+            st.info("Install kaleido for image download: pip install kaleido")
+
+# ---------------- DOWNLOAD DATA ----------------
+
+    csv = df.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        "Download filtered data",
+        csv,
+        "filtered_data.csv",
+        "text/csv"
+    )
