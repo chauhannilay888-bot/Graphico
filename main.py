@@ -1,226 +1,250 @@
 import streamlit as st
-
-# Google HTML file verification (final clean version)
-params = st.query_params
-if "google-verification" in params:
-    file_name = params["google-verification"][0]
-    if file_name == "googlea9edb648053b5bdc.html":
-        st.write("google-site-verification=googlea9edb648053b5bdc")
-    st.stop()
-
-# other imports
-import matplotlib.pyplot as plt
 import pandas as pd
-import json as js
+import matplotlib.pyplot as plt
+import plotly.express as px
 from io import BytesIO
-        
-# Downloading graph buffer
-buf = BytesIO()
 
-# Basic Config
+# Page config
 st.set_page_config(page_title="Graphico", layout="wide")
 
-st.title("Create Anytime, Anywhere")
-st.subheader("Upload your data and make beautiful graphs instantly!")
+st.title("📊 Graphico")
+st.subheader("Create beautiful graphs from your data instantly!")
 
 # File uploader
-uploaded_file = st.file_uploader("Upload your data (JSON, CSV, or Excel)", type=["json", "csv", "xlsx", "xls"])
-
-# Data loading
-df = None
-if uploaded_file is not None:
-    try:
-        file_ext = uploaded_file.name.split('.')[-1].lower()
-        
-        if file_ext == 'json':
-            df = pd.read_json(uploaded_file)
-        elif file_ext in ['csv', 'xlsx', 'xls']:
-            if file_ext == 'csv':
-                df = pd.read_csv(uploaded_file)
-            else:
-                df = pd.read_excel(uploaded_file)
-        else:
-            st.error("Unsupported file format!")
-            df = None
-        
-        if df is not None:
-            st.success("Data loaded successfully!")
-            st.dataframe(df.head(10))  # Preview first 10 rows
-        
-    except Exception as e:
-        st.error(f"Error loading file: {str(e)}")
-        df = None
-
-# Sidebar for graph type + music
-graph_type = st.sidebar.radio(
-    "Choose the type of graph",
-    options=["Bar Graph", "Pie Chart", "Histogram", "Line Graph", "Scatter Plot"]
+uploaded_file = st.file_uploader(
+    "Upload your data (JSON, CSV, Excel)",
+    type=["json", "csv", "xlsx", "xls"]
 )
 
-st.sidebar.write("Want some music? 🎵")
-st.sidebar.audio("music.mp3", loop=True, format="audio/mp3")
+df = None
 
+# Load data
+if uploaded_file is not None:
+    try:
+        file_ext = uploaded_file.name.split(".")[-1].lower()
+
+        if file_ext == "csv":
+            df = pd.read_csv(uploaded_file)
+
+        elif file_ext in ["xlsx", "xls"]:
+            df = pd.read_excel(uploaded_file)
+
+        elif file_ext == "json":
+            df = pd.read_json(uploaded_file)
+
+        st.success("✅ Data loaded successfully!")
+        st.dataframe(df.head(10))
+
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
+
+# If data exists
 if df is not None:
-    title = st.text_input("Set a title for your graph")
+
+    # Sidebar settings
+    st.sidebar.header("Graph Settings")
+
+    theme = st.sidebar.selectbox(
+        "Graph Theme",
+        ["default", "ggplot", "seaborn", "dark_background"]
+    )
+
+    plt.style.use(theme)
+
+    color = st.sidebar.color_picker("Graph Color", "#1f77b4")
+    show_grid = st.sidebar.checkbox("Show Grid", True)
+
+    graph_type = st.sidebar.radio(
+        "Graph Type",
+        ["Auto (Smart Suggestion)", "Bar Graph", "Pie Chart",
+         "Histogram", "Line Graph", "Scatter Plot"]
+    )
+
+    # Dataset insights
+    with st.expander("📊 Dataset Insights"):
+        st.write("Rows:", df.shape[0])
+        st.write("Columns:", df.shape[1])
+        st.write("Missing values:", df.isnull().sum().sum())
+        st.write("Numeric columns:", len(df.select_dtypes(include="number").columns))
+        st.write("Categorical columns:", len(df.select_dtypes(exclude="number").columns))
+
+    # Column detection
     columns = list(df.columns)
-    
-    color = st.sidebar.color_picker("Choose color", value="#1f77b4")
-    show_grid = st.sidebar.checkbox("Show Grid", value=True)
-    
+    numeric_cols = df.select_dtypes(include="number").columns
+    categorical_cols = df.select_dtypes(exclude="number").columns
+
+    # Smart suggestion
+    if graph_type == "Auto (Smart Suggestion)":
+
+        if len(numeric_cols) >= 2:
+            suggestion = "Scatter Plot"
+
+        elif len(numeric_cols) == 1:
+            suggestion = "Histogram"
+
+        elif len(categorical_cols) >= 1 and len(numeric_cols) >= 1:
+            suggestion = "Bar Graph"
+
+        else:
+            suggestion = "Line Graph"
+
+        st.info(f"🤖 Suggested Graph: **{suggestion}**")
+        graph_type = suggestion
+
+    title = st.text_input("Graph Title")
+
+    # ---------------- BAR GRAPH ----------------
+
     if graph_type == "Bar Graph":
-        x_axis = st.selectbox("Horizontal axis (X-axis)", options=columns)
-        y_axis = st.selectbox("Vertical axis (Y-axis)", options=columns)
-        
-        if st.button("Plot Bar Graph"):
-            fig, ax = plt.subplots(figsize=(10, 6))
+
+        x_axis = st.selectbox("X-axis", columns)
+        y_axis = st.selectbox("Y-axis", numeric_cols)
+
+        if st.button("Generate Bar Graph"):
+
+            fig, ax = plt.subplots(figsize=(10,6))
             ax.bar(df[x_axis], df[y_axis], color=color)
+
             ax.set_xlabel(x_axis)
             ax.set_ylabel(y_axis)
             ax.set_title(title)
-            ax.tick_params(axis='x', rotation=45)
+
             if show_grid:
-                ax.grid(True, linestyle=':', alpha=1)
-            plt.tight_layout()
+                ax.grid(True, linestyle=":")
+
             st.pyplot(fig)
             st.balloons()
+
+            buf = BytesIO()
             fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
             buf.seek(0)
+
             st.download_button(
-                label="📥 Download Plot as PNG",
-                data=buf,
-                file_name="bar_graph.png",
-                mime="image/png"
+                "📥 Download PNG",
+                buf,
+                "bar_graph.png",
+                "image/png"
             )
-    
+
+    # ---------------- PIE CHART ----------------
+
     elif graph_type == "Pie Chart":
-        labels_col = st.selectbox("Labels column", options=columns)
-        values_col = st.selectbox("Values column", options=columns)
-        
-        if st.button("Plot Pie Chart"):
-            fig, ax = plt.subplots(figsize=(8, 8))
-            ax.pie(df[values_col], labels=df[labels_col], autopct='%1.1f%%', colors=[color, '#ff7f0e', '#2ca02c', '#d62728'])
-            ax.set_title(title)
-            st.pyplot(fig)
-            st.balloons()
-            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
-            buf.seek(0)
-            st.download_button(
-                label="📥 Download Plot as PNG",
-                data=buf,
-                file_name="pie_chart.png",
-                mime="image/png"
+
+        labels = st.selectbox("Labels Column", columns)
+        values = st.selectbox("Values Column", numeric_cols)
+
+        if st.button("Generate Pie Chart"):
+
+            colors = plt.cm.tab20.colors
+
+            fig, ax = plt.subplots()
+
+            ax.pie(
+                df[values],
+                labels=df[labels],
+                autopct="%1.1f%%",
+                colors=colors
             )
-    
+
+            ax.set_title(title)
+
+            st.pyplot(fig)
+
+            buf = BytesIO()
+            fig.savefig(buf, format="png", dpi=300)
+            buf.seek(0)
+
+            st.download_button(
+                "📥 Download PNG",
+                buf,
+                "pie_chart.png",
+                "image/png"
+            )
+
+    # ---------------- HISTOGRAM ----------------
+
     elif graph_type == "Histogram":
-        col = st.selectbox("Column for Histogram", options=columns)
-        bins = st.number_input("Number of Bins", min_value=5, max_value=50, value=10)
-        
-        if st.button("Plot Histogram"):
-            fig, ax = plt.subplots(figsize=(10, 6))
-            ax.hist(df[col], bins=bins, color=color, edgecolor='black')
+
+        col = st.selectbox("Column", numeric_cols)
+        bins = st.slider("Bins", 5, 50, 10)
+
+        if st.button("Generate Histogram"):
+
+            fig, ax = plt.subplots(figsize=(10,6))
+
+            ax.hist(df[col], bins=bins, color=color, edgecolor="black")
+
             ax.set_title(title)
             ax.set_xlabel(col)
             ax.set_ylabel("Frequency")
+
             if show_grid:
-                ax.grid(True, linestyle=':', alpha=1)
+                ax.grid(True, linestyle=":")
+
             st.pyplot(fig)
-            st.balloons()
-            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+
+            buf = BytesIO()
+            fig.savefig(buf, format="png", dpi=300)
             buf.seek(0)
+
             st.download_button(
-                label="📥 Download Plot as PNG",
-                data=buf,
-                file_name="histogram.png",
-                mime="image/png"
+                "📥 Download PNG",
+                buf,
+                "histogram.png",
+                "image/png"
             )
-    
+
+    # ---------------- LINE GRAPH ----------------
+
     elif graph_type == "Line Graph":
-        x_axis = st.selectbox("Horizontal axis (X-axis)", options=columns)
-        y_axis = st.selectbox("Vertical axis (Y-axis)", options=columns)
-        line_style = st.selectbox("Line Style", ["Solid", "Dashed", "Dotted"])
-        marker_style = st.selectbox("Marker Style", ["None", "Circle", "Square", "Triangle Up", "Triangle Down", "Diamond"])
-        
-        if st.button("Plot Line Graph"):
-            fig, ax = plt.subplots(figsize=(10, 6))
-            linestyle_map = {"Solid": '-', "Dashed": '--', "Dotted": ':'}
-            marker_map = {"None": None, "Circle": 'o', "Square": 's', "Triangle Up": '^', "Triangle Down": 'v', "Diamond": 'D'}
-            
-            ax.plot(df[x_axis], df[y_axis], color=color, linestyle=linestyle_map[line_style], marker=marker_map[marker_style])
+
+        x_axis = st.selectbox("X-axis", columns)
+        y_axis = st.selectbox("Y-axis", numeric_cols)
+
+        if st.button("Generate Line Graph"):
+
+            fig, ax = plt.subplots(figsize=(10,6))
+
+            ax.plot(df[x_axis], df[y_axis], color=color, marker="o")
+
+            ax.set_title(title)
             ax.set_xlabel(x_axis)
             ax.set_ylabel(y_axis)
-            ax.set_title(title)
-            ax.tick_params(axis='x', rotation=45)
+
             if show_grid:
-                ax.grid(True, linestyle=':', alpha=1)
-            plt.tight_layout()
+                ax.grid(True, linestyle=":")
+
             st.pyplot(fig)
-            st.balloons()
-            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
+
+            buf = BytesIO()
+            fig.savefig(buf, format="png", dpi=300)
             buf.seek(0)
+
             st.download_button(
-                label="📥 Download Plot as PNG",
-                data=buf,
-                file_name="line_graph.png",
-                mime="image/png"
+                "📥 Download PNG",
+                buf,
+                "line_graph.png",
+                "image/png"
             )
-    
+
+    # ---------------- SCATTER (PLOTLY) ----------------
+
     elif graph_type == "Scatter Plot":
-        x_axis = st.selectbox("Horizontal axis (X-axis)", options=columns)
-        y_axis = st.selectbox("Vertical axis (Y-axis)", options=columns)
-        marker_style = st.selectbox("Marker Style", ["Circle", "Square", "Triangle Up", "Triangle Down", "Diamond"])
-        
-        if st.button("Plot Scatter Plot"):
-            fig, ax = plt.subplots(figsize=(10, 6))
-            marker_map = {"Circle": 'o', "Square": 's', "Triangle Up": '^', "Triangle Down": 'v', "Diamond": 'D'}
-            
-            ax.scatter(df[x_axis], df[y_axis], color=color, marker=marker_map[marker_style])
-            ax.set_xlabel(x_axis)
-            ax.set_ylabel(y_axis)
-            ax.set_title(title)
-            ax.tick_params(axis='x', rotation=45)
-            if show_grid:
-                ax.grid(True, linestyle=':', alpha=1)
-            st.pyplot(fig)
-            st.balloons()
-            fig.savefig(buf, format="png", dpi=300, bbox_inches="tight")
-            buf.seek(0)
-            st.download_button(
-                label="📥 Download Plot as PNG",
-                data=buf,
-                file_name="scatter_plot.png",
-                mime="image/png"
+
+        x_axis = st.selectbox("X-axis", numeric_cols)
+        y_axis = st.selectbox("Y-axis", numeric_cols)
+
+        if st.button("Generate Scatter Plot"):
+
+            fig = px.scatter(
+                df,
+                x=x_axis,
+                y=y_axis,
+                color_discrete_sequence=[color],
+                title=title
             )
+
+            st.plotly_chart(fig, use_container_width=True)
 
 else:
-    st.info("Upload a JSON, CSV, or Excel file to start creating graphs!")
-
-# Bottom watermark
-st.markdown("""
-<style>
-  .bottom-watermark {
-    position: fixed;
-    bottom: 15px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 14px;
-    font-weight: 500;
-    color: #1e90ff;
-    background: transparent;
-    padding: 5px 15px;
-    border-radius: 8px;
-    z-index: 5;
-    pointer-events: none;
-    user-select: none;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-  }
-</style>
-
-<div class="bottom-watermark">
-  🌸 Crafted with love by Nilay Chauhan 🌸
-</div>
-""", unsafe_allow_html=True)
-
-
-
-
-
+    st.info("⬆ Upload a dataset to begin creating graphs!")
