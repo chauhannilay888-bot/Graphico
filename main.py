@@ -120,18 +120,6 @@ if df is not None:
     if fig:
         st.plotly_chart(fig, use_container_width=True)
 
-# ---------------- DOWNLOAD GRAPH ----------------
-        try:
-            img_bytes = fig.to_image(format="png")
-            st.download_button(
-                label="Download PNG",
-                data=img_bytes,
-                file_name="graph.png",
-                mime="image/png"
-            )
-        except:
-            st.info("Install kaleido for image download: pip install kaleido")
-
 # ---------------- DOWNLOAD DATA ----------------
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download filtered data", csv, "filtered_data.csv", "text/csv")
