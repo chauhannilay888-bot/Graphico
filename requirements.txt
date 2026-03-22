@@ -1,5 +1,7 @@
-streamlit 
-kaleido
+streamlit
 pandas
+time
 plotly
-
+os
+json
+PLT
