@@ -1,4 +1,4 @@
 streamlit
 pandas
-time
+streamlit-gsheets
 plotly
