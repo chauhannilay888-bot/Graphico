@@ -3,7 +3,14 @@ import pandas as pd
 import plotly.express as px
 
 # ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="Graphico Pro", layout="wide")
+st.set_page_config(
+    page_title="Graphico Pro - A tool for taking out Data insights and impressive Visualizations,
+    page_icon="📊",
+    layout="wide",
+    menu_items={
+        'About': "Graphico Pro: Easiest tool for making impressive charts/graphs from any Excel/Csv/Json Dataset."
+    }
+)
 
 # ---------------- CUSTOM CSS ----------------
 st.markdown("""
