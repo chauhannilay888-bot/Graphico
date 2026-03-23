@@ -2,6 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# ---------------- GOOGLE VERIFICATION ---------------
+components.html(
+    """
+    <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
+    """,
+    height=0,
+)
+
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
     page_title="Graphico Pro - A tool for taking out Data insights and impressive Visualizations",
