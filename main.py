@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
-import time
 import plotly.express as px
-import os
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Graphico Pro", layout="wide")
