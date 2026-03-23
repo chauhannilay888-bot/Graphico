@@ -3,21 +3,30 @@ import pandas as pd
 import plotly.express as px
 import streamlit.components.v1 as components
 
-# ---------------- GOOGLE VERIFICATION ---------------
-components.html(
-    """
+# ---------------- GOOGLE ANALYTICS & VERIFICATION ----------------
+ga_id = st.secrets.get("GA_MEASUREMENT_ID", "G-FHN9KEP6KN")
+
+ga_code = f"""
+    <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', '{ga_id}');
+    </script>
     <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
-    """,
-    height=0,
-)
+"""
+
+# YEAH WALI LINE TU BHOOL GAYA THA - Sabse zaroori!
+components.html(ga_code, height=0)
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Graphico Pro - A tool for taking out Data insights and impressive Visualizations",
+    page_title="Graphico Pro - Data Visualizations & Insights Tool",
     page_icon="📊",
     layout="wide",
     menu_items={
-        'About': "Graphico Pro: Easiest tool for making impressive charts/graphs from any Excel/Csv/Json Dataset."
+        'About': "Graphico Pro: Easiest tool for making impressive charts from Excel/CSV."
     }
 )
 
@@ -26,8 +35,6 @@ st.markdown("""
 <style>
 body { background: #0f172a; }
 .block-container { padding-top: 2rem; }
-.card { background: rgba(255,255,255,0.06); padding: 25px; border-radius: 12px;
-backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom:20px; }
 .title { font-size:28px; font-weight:bold;
 background: linear-gradient(90deg,#6366f1,#06b6d4);
 -webkit-background-clip:text; color:transparent; }
@@ -37,27 +44,20 @@ background: linear-gradient(90deg,#6366f1,#06b6d4);
 # ---------------- HEADER ----------------
 st.markdown('<div class="title">Graphico Pro 📊</div>', unsafe_allow_html=True)
 st.title("Welcome to Graphico Pro!")
-st.subheader("What's on your mind today?")
+st.subheader("Data se Graph Banayein - Fast & Professional")
 st.write("Upload datasets and generate interactive professional charts.")
 
-# Dark theme for Plotly
 px.defaults.template = "plotly_dark"
 
-# ---------------- DATA LOADER ----------------
 @st.cache_data
 def load_data(file, ext):
-    if ext == "csv":
-        return pd.read_csv(file)
-    elif ext in ["xlsx", "xls"]:
-        return pd.read_excel(file)
-    elif ext == "json":
-        return pd.read_json(file)
+    if ext == "csv": return pd.read_csv(file)
+    elif ext in ["xlsx", "xls"]: return pd.read_excel(file)
+    elif ext == "json": return pd.read_json(file)
 
-# ---------------- FILE UPLOAD ----------------
-uploaded_file = st.file_uploader(
-    "Upload dataset", type=["csv", "xlsx", "xls", "json"]
-)
+uploaded_file = st.file_uploader("Upload dataset", type=["csv", "xlsx", "xls", "json"])
 df = None
+
 if uploaded_file:
     ext = uploaded_file.name.split(".")[-1].lower()
     try:
@@ -65,72 +65,51 @@ if uploaded_file:
         st.success("Dataset loaded successfully")
         st.dataframe(df.head())
     except Exception as e:
-        st.error(f"Error loading file: {e}")
+        st.error(f"Error: {e}")
         st.stop()
 
-# ---------------- DATA INSIGHTS ----------------
 if df is not None:
-    col1, col2, col3 = st.columns(3)
-    with col1: st.metric("Rows", df.shape[0])
-    with col2: st.metric("Columns", df.shape[1])
-    with col3: st.metric("Missing values", int(df.isnull().sum().sum()))
+    # Metrics
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Rows", df.shape[0])
+    c2.metric("Columns", df.shape[1])
+    c3.metric("Missing", int(df.isnull().sum().sum()))
 
-# ---------------- FILTER DATA ----------------
-if df is not None:
+    # Filter
     st.subheader("Filter Data")
-    filter_col = st.selectbox("Select column to filter", df.columns)
-    unique_vals = df[filter_col].dropna().unique()
-    selected_vals = st.multiselect("Values", unique_vals, default=unique_vals)
-    df = df[df[filter_col].isin(selected_vals)]
+    f_col = st.selectbox("Select column to filter", df.columns)
+    u_vals = df[f_col].dropna().unique()
+    s_vals = st.multiselect("Values", u_vals, default=u_vals)
+    df = df[df[f_col].isin(s_vals)]
 
-# ---------------- GRAPH SETTINGS ----------------
-if df is not None:
+    # Sidebar Settings
     st.sidebar.header("Graph Settings")
-    graph_type = st.sidebar.selectbox(
-        "Chart type",
-        ["Auto Suggestion","Bar","Line","Scatter","Pie","Histogram","Box","Area","Heatmap"]
-    )
-    title = st.sidebar.text_input("Chart Title", "My Chart")
-    numeric_cols = df.select_dtypes(include="number").columns
-    columns = df.columns
-    x_axis = st.sidebar.selectbox("X Axis", columns)
-    y_axis = None
-    if len(numeric_cols) > 0:
-        y_axis = st.sidebar.selectbox("Y Axis", numeric_cols)
-    else:
-        st.warning("No numeric columns available for Y axis.")
+    g_type = st.sidebar.selectbox("Chart type", ["Auto Suggestion","Bar","Line","Scatter","Pie","Histogram","Box","Area","Heatmap"])
+    chart_title = st.sidebar.text_input("Chart Title", "My Chart")
+    
+    num_cols = df.select_dtypes(include="number").columns
+    x_ax = st.sidebar.selectbox("X Axis", df.columns)
+    y_ax = st.sidebar.selectbox("Y Axis", num_cols) if len(num_cols) > 0 else None
 
-    # ---------------- SMART SUGGESTION ----------------
-    if graph_type == "Auto Suggestion":
-        if len(numeric_cols) >= 2:
-            graph_type = "Scatter"
-        elif len(numeric_cols) == 1:
-            graph_type = "Histogram"
-        else:
-            graph_type = "Bar"
-        st.info(f"Suggested graph: {graph_type}")
+    if g_type == "Auto Suggestion":
+        g_type = "Scatter" if len(num_cols) >= 2 else "Bar"
+        st.info(f"Suggested: {g_type}")
 
-    # ---------------- PLOTLY CHARTS ----------------
     fig = None
-    if graph_type != "Heatmap" and y_axis is not None:
-        if graph_type == "Bar": fig = px.bar(df, x=x_axis, y=y_axis, title=title)
-        elif graph_type == "Line": fig = px.line(df, x=x_axis, y=y_axis, title=title)
-        elif graph_type == "Scatter": fig = px.scatter(df, x=x_axis, y=y_axis, title=title)
-        elif graph_type == "Pie": fig = px.pie(df, names=x_axis, values=y_axis, title=title)
-        elif graph_type == "Histogram": fig = px.histogram(df, x=y_axis, title=title)
-        elif graph_type == "Box": fig = px.box(df, x=x_axis, y=y_axis, title=title)
-        elif graph_type == "Area": fig = px.area(df, x=x_axis, y=y_axis, title=title)
-    if graph_type == "Heatmap":
+    if g_type != "Heatmap" and y_ax:
+        if g_type == "Bar": fig = px.bar(df, x=x_ax, y=y_ax, title=chart_title)
+        elif g_type == "Line": fig = px.line(df, x=x_ax, y=y_ax, title=chart_title)
+        elif g_type == "Scatter": fig = px.scatter(df, x=x_ax, y=y_ax, title=chart_title)
+        elif g_type == "Pie": fig = px.pie(df, names=x_ax, values=y_ax, title=chart_title)
+        elif g_type == "Histogram": fig = px.histogram(df, x=y_ax, title=chart_title)
+        elif g_type == "Box": fig = px.box(df, x=x_ax, y=y_ax, title=chart_title)
+        elif g_type == "Area": fig = px.area(df, x=x_ax, y=y_ax, title=chart_title)
+    
+    if g_type == "Heatmap":
         corr = df.corr(numeric_only=True)
-        if not corr.empty:
-            fig = px.imshow(corr, text_auto=True, title="Correlation Heatmap")
-        else:
-            st.warning("No numeric data available for heatmap.")
+        if not corr.empty: fig = px.imshow(corr, text_auto=True, title="Heatmap")
 
-    # ---------------- DISPLAY CHART ----------------
-    if fig:
-        st.plotly_chart(fig, use_container_width=True)
+    if fig: st.plotly_chart(fig, use_container_width=True)
 
-    # ---------------- DOWNLOAD DATA ----------------
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download filtered data", csv, "filtered_data.csv", "text/csv")
