@@ -7,6 +7,7 @@ import streamlit.components.v1 as components
 ga_id = st.secrets.get("GA_MEASUREMENT_ID", "G-FHN9KEP6KN")
 
 ga_code = f"""
+    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -16,8 +17,6 @@ ga_code = f"""
     </script>
     <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
 """
-
-# YEAH WALI LINE TU BHOOL GAYA THA - Sabse zaroori!
 components.html(ga_code, height=0)
 
 # ---------------- PAGE CONFIG ----------------
