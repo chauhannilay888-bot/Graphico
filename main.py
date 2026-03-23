@@ -4,10 +4,9 @@ import plotly.express as px
 import streamlit.components.v1 as components
 
 # ---------------- GOOGLE ANALYTICS & VERIFICATION ----------------
-ga_id = st.secrets.get("GA_MEASUREMENT_ID", "G-FHN9KEP6KN")
+ga_id = "G-FHN9KEP6KN" 
 
 ga_code = f"""
-    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -15,8 +14,11 @@ ga_code = f"""
         gtag('js', new Date());
         gtag('config', '{ga_id}');
     </script>
+    
     <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
 """
+
+# Isse render karna zaroori hai
 components.html(ga_code, height=0)
 
 # ---------------- PAGE CONFIG ----------------
@@ -29,19 +31,7 @@ st.set_page_config(
     }
 )
 
-# ---------------- CUSTOM CSS ----------------
-st.markdown("""
-<style>
-body { background: #0f172a; }
-.block-container { padding-top: 2rem; }
-.title { font-size:28px; font-weight:bold;
-background: linear-gradient(90deg,#6366f1,#06b6d4);
--webkit-background-clip:text; color:transparent; }
-</style>
-""", unsafe_allow_html=True)
-
 # ---------------- HEADER ----------------
-st.markdown('<div class="title">Graphico Pro 📊</div>', unsafe_allow_html=True)
 st.title("Welcome to Graphico Pro!")
 st.subheader("Data se Graph Banayein - Fast & Professional")
 st.write("Upload datasets and generate interactive professional charts.")
