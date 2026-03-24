@@ -21,32 +21,31 @@ components.html(ga_code, height=0)
 st.set_page_config(
     page_title="Graphico Pro - Data Visualizations & Insights Tool",
     page_icon="📊",
-    layout="wide",
-    menu_items={
-        'About': "Graphico Pro: Easiest tool for making impressive charts from Excel/CSV."
-    }
+    layout="wide"
 )
 
 # ---------------- HEADER ----------------
 st.title("Welcome to Graphico Pro!")
 st.subheader("Data se Graph Banayein - Fast & Professional")
-st.write("Upload datasets and generate interactive professional charts.")
 
 px.defaults.template = "plotly_dark"
 
-# ---------------- DATA LOADING ----------------
+# ---------------- DATA LOADING (THE FIX) ----------------
 @st.cache_data
-def load_data(file_content, ext):
+def load_data(uploaded_file, ext):
     try:
+        # getvalue() pure file content ko bytes mein nikal leta hai
+        file_bytes = uploaded_file.getvalue()
+        
         if ext == "csv":
-            return pd.read_csv(io.BytesIO(file_content))
+            return pd.read_csv(io.BytesIO(file_bytes))
         elif ext in ["xlsx", "xls"]:
-            # engine='openpyxl' for .xlsx files
-            return pd.read_excel(io.BytesIO(file_content), engine='openpyxl')
+            # openpyxl engine specify karna zaroori hai
+            return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
         elif ext == "json":
-            return pd.read_json(io.BytesIO(file_content))
+            return pd.read_json(io.BytesIO(file_bytes))
     except Exception as e:
-        st.error(f"Error loading file: {e}")
+        st.error(f"File Load Error: {e}")
         return None
 
 uploaded_file = st.file_uploader("Upload dataset", type=["csv", "xlsx", "xls", "json"])
@@ -54,13 +53,10 @@ df = None
 
 if uploaded_file:
     ext = uploaded_file.name.split(".")[-1].lower()
-    # file.read() pointer ko aage le jata hai, isliye content save kar rahe hain
-    file_content = uploaded_file.read()
-    df = load_data(file_content, ext)
+    df = load_data(uploaded_file, ext)
     
     if df is not None:
         st.success("Dataset loaded successfully!")
-        st.subheader("Data Preview (Top 5 Rows)")
         st.dataframe(df.head())
     else:
         st.stop()
@@ -73,49 +69,39 @@ if df is not None:
     c2.metric("Columns", df.shape[1])
     c3.metric("Missing Values", int(df.isnull().sum().sum()))
 
-    # Filter Section
     st.divider()
-    st.subheader("🔍 Filter Your Data")
-    f_col = st.selectbox("Select column to filter", df.columns)
     
-    # Bug Fix: Dropna to avoid errors in multiselect
-    u_vals = df[f_col].dropna().unique().tolist()
-    s_vals = st.multiselect(f"Values in '{f_col}'", u_vals, default=u_vals)
-    
-    # Filter apply karna
-    df_filtered = df[df[f_col].isin(s_vals)]
-
     # Sidebar Settings
-    st.sidebar.header("🎨 Graph Settings")
+    st.sidebar.header("Graph Settings")
     g_type = st.sidebar.selectbox("Chart type", ["Auto Suggestion","Bar","Line","Scatter","Pie","Histogram","Box","Area","Heatmap"])
     chart_title = st.sidebar.text_input("Chart Title", "My Analysis Chart")
     
-    num_cols = df_filtered.select_dtypes(include="number").columns.tolist()
-    all_cols = df_filtered.columns.tolist()
+    num_cols = df.select_dtypes(include="number").columns.tolist()
+    all_cols = df.columns.tolist()
 
-    x_ax = st.sidebar.selectbox("X Axis (Horizontal)", all_cols)
-    y_ax = st.sidebar.selectbox("Y Axis (Vertical - Numeric)", num_cols) if len(num_cols) > 0 else None
+    x_ax = st.sidebar.selectbox("X Axis", all_cols)
+    y_ax = st.sidebar.selectbox("Y Axis", num_cols) if len(num_cols) > 0 else None
+
+    # Filter Section
+    st.subheader("🔍 Filter Data")
+    f_col = st.selectbox("Select column to filter", all_cols)
+    u_vals = df[f_col].dropna().unique().tolist()
+    s_vals = st.multiselect("Values", u_vals, default=u_vals)
+    
+    # Filtered DF creation
+    df_filtered = df[df[f_col].isin(s_vals)]
 
     # Auto Suggestion Logic
     if g_type == "Auto Suggestion":
-        if len(num_cols) >= 2:
-            g_type = "Scatter"
-        else:
-            g_type = "Bar"
-        st.sidebar.info(f"Auto-selected: {g_type}")
+        g_type = "Scatter" if len(num_cols) >= 2 else "Bar"
+        st.sidebar.info(f"Suggested: {g_type}")
 
-    # Chart Generation
-    st.divider()
     fig = None
-    
     try:
         if g_type == "Heatmap":
             corr = df_filtered.corr(numeric_only=True)
             if not corr.empty:
-                fig = px.imshow(corr, text_auto=True, title="Feature Correlation Heatmap")
-            else:
-                st.warning("Heatmap ke liye numeric data nahi mila!")
-        
+                fig = px.imshow(corr, text_auto=True, title="Heatmap")
         elif y_ax:
             if g_type == "Bar": fig = px.bar(df_filtered, x=x_ax, y=y_ax, title=chart_title)
             elif g_type == "Line": fig = px.line(df_filtered, x=x_ax, y=y_ax, title=chart_title)
@@ -124,24 +110,12 @@ if df is not None:
             elif g_type == "Histogram": fig = px.histogram(df_filtered, x=y_ax, title=chart_title)
             elif g_type == "Box": fig = px.box(df_filtered, x=x_ax, y=y_ax, title=chart_title)
             elif g_type == "Area": fig = px.area(df_filtered, x=x_ax, y=y_ax, title=chart_title)
-        else:
-            st.warning("Please ensure you have numeric columns for this chart type.")
 
         if fig:
             st.plotly_chart(fig, use_container_width=True)
-            
-            # Download Button for Filtered Data
-            st.divider()
-            csv = df_filtered.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="📥 Download Filtered Data as CSV",
-                data=csv,
-                file_name="graphico_pro_data.csv",
-                mime="text/csv"
-            )
-            
     except Exception as e:
-        st.error(f"Visualization Error: {e}")
+        st.error(f"Chart Error: {e}")
 
-else:
-    st.info("👆 Please upload a CSV, Excel, or JSON file to start.")
+    # Download Button
+    csv = df_filtered.to_csv(index=False).encode("utf-8")
+    st.download_button("Download filtered data", csv, "filtered_data.csv", "text/csv")
