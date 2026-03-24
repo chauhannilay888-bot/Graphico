@@ -45,7 +45,6 @@ def load_data(file, ext):
             df = pd.read_excel(io.BytesIO(file.read()), engine='openpyxl')
       except Exception as e:
             st.error(f"Excel Error: {e}")
-            df = None
     elif ext == "json":
       df = pd.read_json(file)
         
