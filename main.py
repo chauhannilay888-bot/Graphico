@@ -15,7 +15,6 @@ ga_code = """
 # HTML Component ko render karo
 components.html(ga_code, height=0)
 
-st.write(f'<meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />', unsafe_allow_html=True)
 
 import pandas as pd
 import plotly.express as px
