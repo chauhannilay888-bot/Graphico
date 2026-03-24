@@ -40,14 +40,14 @@ px.defaults.template = "plotly_dark"
 @st.cache_data
 def load_data(file, ext):
     if ext == "csv": return pd.read_csv(file)
-    elif ext in ["xlsx", "xls"]: return pd.read_excel(file, engine='openpyxl')
-    elif ext == "json":
+    elif ext in ["xlsx", "xls"]:
       try:
-            # BytesIO ka use karke file ko buffer mein daalein
             df = pd.read_excel(io.BytesIO(file.read()), engine='openpyxl')
       except Exception as e:
             st.error(f"Excel Error: {e}")
             df = None
+    elif ext == "json":
+      df = pd.read_json(file)
         
 uploaded_file = st.file_uploader("Upload dataset", type=["csv", "xlsx", "xls", "json"])
 df = None
