@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import io
 
 # ---------GOOGLE SITE VERIFICATION-----------
 ga_code = """
@@ -40,8 +41,14 @@ px.defaults.template = "plotly_dark"
 def load_data(file, ext):
     if ext == "csv": return pd.read_csv(file)
     elif ext in ["xlsx", "xls"]: return pd.read_excel(file, engine='openpyxl')
-    elif ext == "json": return pd.read_json(file)
-
+    elif ext == "json":
+      try:
+            # BytesIO ka use karke file ko buffer mein daalein
+            df = pd.read_excel(io.BytesIO(file.read()), engine='openpyxl')
+      except Exception as e:
+            st.error(f"Excel Error: {e}")
+            df = None
+        
 uploaded_file = st.file_uploader("Upload dataset", type=["csv", "xlsx", "xls", "json"])
 df = None
 
