@@ -39,7 +39,7 @@ px.defaults.template = "plotly_dark"
 @st.cache_data
 def load_data(file, ext):
     if ext == "csv": return pd.read_csv(file)
-    elif ext in ["xlsx", "xls"]: return pd.read_excel(file)
+    elif ext in ["xlsx", "xls"]: return pd.read_excel(file, engine='openpyxl')
     elif ext == "json": return pd.read_json(file)
 
 uploaded_file = st.file_uploader("Upload dataset", type=["csv", "xlsx", "xls", "json"])
