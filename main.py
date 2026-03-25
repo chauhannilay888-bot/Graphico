@@ -3,6 +3,8 @@ import streamlit.components.v1 as components
 import io
 import pandas as pd
 import plotly.express as px
+import os
+from PIL import Image
 
 # --------- 1. GOOGLE ANALYTICS & CUSTOM CSS -----------
 ga_code = """
@@ -59,7 +61,7 @@ with st.sidebar:
     st.markdown("<p style='text-align: center; font-size: 0.8em;'>Empowering Your Data Journey</p>", unsafe_allow_html=True)
     st.divider()
     
-    page = st.radio("✨ Navigation", ["🏠 Home & Visualizer", "🔍 Raw Insights"], index=0)
+    page = st.radio("✨ Navigation", ["🏠 Home & Visualizer", "🔍 Raw Insights", "📖 Samples"], index=0)
     st.divider()
     
     uploaded_file = st.file_uploader("Upload Dataset (CSV, Excel, JSON)", type=["csv", "xlsx", "xls", "json"])
@@ -155,6 +157,15 @@ if df is not None:
         st.divider()
         st.subheader("❌ Missing Values Check")
         st.write(df.isnull().sum())
+    else:
+        st.subheader("Taste it Nicly! ")
+        files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
+        for i in range(0, len(files), 4):
+            cols = st.columns(4)
+            for j, col in enumerate(cols):
+                if i+j < len(files):
+                    col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
+
 
 else:
     # Stylish Welcome Screen
