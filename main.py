@@ -158,7 +158,7 @@ if df is not None:
         st.subheader("❌ Missing Values Check")
         st.write(df.isnull().sum())
     else:
-        st.subheader("Taste it Nicly! ")
+        st.subheader("Taste it Nicely! ")
         files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
         for i in range(0, len(files), 4):
             cols = st.columns(4)

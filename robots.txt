@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://chauhannilay888-bot.github.io/Graphico/sitemap.xml
