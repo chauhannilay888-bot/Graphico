@@ -157,7 +157,7 @@ if df is not None:
         st.divider()
         st.subheader("❌ Missing Values Check")
         st.write(df.isnull().sum())
-  if page == 'Samples' 
+  if page == '📖 Samples': 
     st.title("Check before Using")
     st.video("Tutorial.mp4")
     st.subheader("Taste it Nicely! ")
