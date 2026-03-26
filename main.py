@@ -158,6 +158,8 @@ if df is not None:
         st.subheader("❌ Missing Values Check")
         st.write(df.isnull().sum())
     else:
+        st.title("Check before Using")
+        st.video("Tutorial.mp4")
         st.subheader("Taste it Nicely! ")
         files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
         for i in range(0, len(files), 4):
