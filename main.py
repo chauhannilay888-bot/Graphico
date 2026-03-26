@@ -68,11 +68,11 @@ if page == '📖 Samples':
   st.video("Tutorial.mp4")
   st.subheader("Taste it Nicely! ")
   files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
-    for i in range(0, len(files), 4):
-      cols = st.columns(4)
-      for j, col in enumerate(cols):
-        if i+j < len(files):
-          col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
+  for i in range(0, len(files), 4):
+    cols = st.columns(4)
+    for j, col in enumerate(cols):
+      if i+j < len(files):
+        col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
     
     uploaded_file = st.file_uploader("Upload Dataset (CSV, Excel, JSON)", type=["csv", "xlsx", "xls", "json"])
     
