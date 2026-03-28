@@ -159,19 +159,18 @@ if df is not None:
         st.subheader("Data Preview")
         st.dataframe(df, use_container_width=True)
 
-    elif page == "📖 Samples":
-        st.title("Tutorial & Samples")
-        if os.path.exists("Tutorial.mp4"):
-            st.video("Tutorial.mp4")
-        
-        folder = "tutorial_PNGs"
-        if os.path.exists(folder):
-            files = [f for f in os.listdir(folder) if f.endswith((".png", ".jpg"))]
-            for i in range(0, len(files), 4):
-                cols = st.columns(4)
-                for j, col in enumerate(cols):
-                    if i+j < len(files):
-                        col.image(Image.open(os.path.join(folder, files[i+j])), use_container_width=True)
+elif page == "📖 Samples":
+  st.title("Tutorial & Samples")
+  if os.path.exists("Tutorial.mp4"):
+    st.video("Tutorial.mp4")
+    folder = "tutorial_PNGs"
+    if os.path.exists(folder):
+      files = [f for f in os.listdir(folder) if f.endswith((".png", ".jpg"))]
+      for i in range(0, len(files), 4):
+        cols = st.columns(4)
+        for j, col in enumerate(cols):
+          if i+j < len(files):
+            col.image(Image.open(os.path.join(folder, files[i+j])), use_container_width=True)
 
 else:
     st.markdown("<div style='text-align: center; padding: 50px;'><h1 style='color: #4facfe;'>💎 Graphico Pro</h1><p>Upload a dataset to start</p></div>", unsafe_allow_html=True)
