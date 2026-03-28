@@ -154,6 +154,18 @@ if df is not None:
     st.subheader("❌ Missing Values Check")
     st.write(df.isnull().sum())
 
+  else:
+    st.title("Check before Using")
+    st.video("Tutorial.mp4")
+    st.subheader("Taste it Nicely! ")
+    files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
+    for i in range(0, len(files), 4):
+      cols = st.columns(4)
+      for j, col in enumerate(cols):
+        if i+j < len(files):
+          col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
+    
+
 elif page == "📖 Samples":
   st.title("Check before Using")
   st.video("Tutorial.mp4")
