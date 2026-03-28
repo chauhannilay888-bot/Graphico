@@ -6,6 +6,11 @@ import plotly.express as px
 import os
 from PIL import Image
 
+st.markdown(
+    f'<p style="display:none;">google-site-verification=zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0</p>',
+    unsafe_allow_html=True
+)
+
 # --------- 1. GOOGLE ANALYTICS & SEARCH CONSOLE VERIFICATION -----------
 ga_code = """
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHN9KEP6KN"></script>
