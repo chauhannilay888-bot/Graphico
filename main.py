@@ -17,6 +17,7 @@ ga_code = """
   gtag('config', 'G-FHN9KEP6KN');
 </script>
 <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
+<link rel="canonical" href="https://graphico.streamlit.app" />
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
     html, body, [class*="css"]  {
