@@ -7,7 +7,6 @@ import os
 from PIL import Image
 
 # --------- 1. GOOGLE ANALYTICS & SEARCH CONSOLE VERIFICATION -----------
-# Ismein tera verification tag already included hai
 ga_code = """
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHN9KEP6KN"></script>
 <script>
