@@ -179,3 +179,16 @@ else:
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+# Isse browser mein check kar lena: your-app.streamlit.app/?sitemap=true
+if st.query_params.get("sitemap") == "true":
+    sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://graphico.streamlit.app</loc>
+    <lastmod>2026-03-28</lastmod>
+    <priority>1.0</priority>
+  </url>
+</urlset>"""
+    st.write(sitemap_xml)
+    st.stop()
