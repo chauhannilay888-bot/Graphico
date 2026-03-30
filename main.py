@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.express as px
 import os
 from PIL import Image
+import json  # ✅ added for review system
 
 # --------- 1. GOOGLE ANALYTICS & CUSTOM CSS -----------
 ga_code = """
@@ -60,6 +61,7 @@ with st.sidebar:
   st.markdown("<h1 style='text-align: center; color: #4facfe;'>💎 GRAPHICO PRO</h1>", unsafe_allow_html=True)
   st.markdown("<p style='text-align: center; font-size: 0.8em;'>Empowering Your Data Journey</p>", unsafe_allow_html=True)
   st.divider()
+
   page = st.radio("✨ Navigation", ["🏠 Home & Visualizer", "🔍 Raw Insights", "📖 Samples"], index=0)
   
   uploaded_file = st.file_uploader("Upload Dataset (CSV, Excel, JSON)", type=["csv", "xlsx", "xls", "json"])
@@ -70,6 +72,49 @@ with st.sidebar:
     df = load_data(uploaded_file, ext)
     if df is not None:
       st.success("✅ Dataset Loaded!")
+
+  # --------- ⭐ REVIEW SYSTEM (ADDED HERE) ----------
+  REVIEW_DATA_FILE = "feedback.json"
+
+  if "show_review" not in st.session_state:
+      st.session_state.show_review = False
+
+  if st.button("⭐ Review Us"):
+      st.session_state.show_review = not st.session_state.show_review
+
+  def load_reviews():
+      if os.path.exists(REVIEW_DATA_FILE):
+          try:
+              with open(REVIEW_DATA_FILE, "r") as f:
+                  return json.load(f)
+          except:
+              return []
+      return []
+
+  def save_reviews(data):
+      with open(REVIEW_DATA_FILE, "w") as f:
+          json.dump(data, f, indent=4)
+
+  if st.session_state.show_review:
+      st.markdown("### 📝 Submit Review")
+
+      rating = st.selectbox("Rate us", [1, 2, 3, 4, 5], key="rev_rating")
+      review = st.text_area("Your Review", key="rev_text")
+
+      if st.button("Submit", key="rev_submit"):
+          if not review.strip():
+              st.warning("Write something first!")
+          else:
+              data = load_reviews()
+              data.append({
+                  "rating": int(rating),
+                  "review": review.strip()
+              })
+              save_reviews(data)
+              st.success("✅ Thanks for your review!")
+
+  # --------- END REVIEW SYSTEM ----------
+
   st.info("Developed with ❤️ by Nilay")
 
 # ---------------- 5. MAIN LOGIC ----------------
@@ -83,7 +128,6 @@ if df is not None:
       <hr style='margin-top: 0; margin-bottom: 20px; border: 0; height: 1px; background-image: linear-gradient(to right, #4facfe, #00f2fe, transparent);'>
       """, unsafe_allow_html=True)
     
-    # Metrics
     m1, m2, m3 = st.columns(3)
     m1.metric("📈 Rows", df.shape[0])
     m2.metric("📋 Columns", df.shape[1])
@@ -91,7 +135,6 @@ if df is not None:
 
     st.divider()
 
-    # Sidebar for Graph Settings (inside Visualizer page)
     st.sidebar.header("🎨 Graph Settings")
     g_type = st.sidebar.selectbox("Chart Type", ["Auto Suggestion","Bar","Line","Scatter","Pie","Histogram","Box","Area","Heatmap"])
     chart_title = st.sidebar.text_input("Chart Title", "My Analysis")
@@ -99,19 +142,16 @@ if df is not None:
     x_ax = st.sidebar.selectbox("X-Axis", all_cols)
     y_ax = st.sidebar.selectbox("Y-Axis (Numeric)", num_cols) if num_cols else None
 
-    # Filter Section on Main Page
     st.subheader("🔍 Filter Data")
     f_col = st.selectbox("Select column to filter", all_cols)
     u_vals = df[f_col].dropna().unique().tolist()
     s_vals = st.multiselect("Select Values", u_vals, default=u_vals[:5] if len(u_vals)>5 else u_vals)
     df_filtered = df[df[f_col].isin(s_vals)]
 
-    # Auto Suggestion Logic
     if g_type == "Auto Suggestion":
       g_type = "Scatter" if len(num_cols) >= 2 else "Bar"
       st.info(f"✨ Suggested: {g_type} Chart")
 
-    # Plotting
     fig = None
     try:
       if g_type == "Heatmap":
@@ -132,7 +172,6 @@ if df is not None:
     except Exception as e:
       st.error(f"Visualization Error: {e}")
 
-    # Download
     csv = df_filtered.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Filtered Data (CSV)", csv, "graphico_report.csv", "text/csv")
 
@@ -164,7 +203,6 @@ if df is not None:
       for j, col in enumerate(cols):
         if i+j < len(files):
           col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
-    
 
 elif page == "📖 Samples":
   st.title("Check before Using")
@@ -178,7 +216,6 @@ elif page == "📖 Samples":
         col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
 
 else:
-  # Stylish Welcome Screen
   st.markdown("""
     <div style='text-align: center; padding: 50px;'>
       <h1 style='font-size: 3.5em; color: #4facfe;'>💎 Graphico Pro</h1>
@@ -190,7 +227,6 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# Isse browser mein check kar lena: your-app.streamlit.app/?sitemap=true
 if st.query_params.get("sitemap") == "true":
   sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
