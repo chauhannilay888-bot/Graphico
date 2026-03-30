@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 import os
 from PIL import Image
-import json  # ✅ added for review system
+import json
 
 # --------- 1. GOOGLE ANALYTICS & CUSTOM CSS -----------
 ga_code = """
@@ -73,7 +73,7 @@ with st.sidebar:
     if df is not None:
       st.success("✅ Dataset Loaded!")
 
-  # --------- ⭐ REVIEW SYSTEM (ADDED HERE) ----------
+  # --------- ⭐ REVIEW SYSTEM ----------
   REVIEW_DATA_FILE = "feedback.json"
 
   if "show_review" not in st.session_state:
