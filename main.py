@@ -91,19 +91,29 @@ with st.sidebar:
               st.warning("Write something first!")
           else:
               try:
+                  # Connection with ttl=0 to avoid old data cache
                   conn = st.connection("gsheets", type=GSheetsConnection)
                   
-                  # Existing data read karo, agar fail ho toh empty DF banao
+                  # Har baar live data fetch karo
                   try:
-                      existing_data = conn.read(worksheet="Sheet1")
+                      existing_data = conn.read(worksheet="Sheet1", ttl=0)
                   except:
                       existing_data = pd.DataFrame(columns=["rating", "review"])
                   
-                  new_row = pd.DataFrame([{"rating": rating, "review": review_text.strip()}])
-                  updated_df = pd.concat([existing_data, new_row], ignore_index=True).dropna(how='all')
+                  # Data clean up
+                  existing_data = existing_data.dropna(how='all')
                   
+                  # Add new row
+                  new_row = pd.DataFrame([{"rating": int(rating), "review": review_text.strip()}])
+                  updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+                  
+                  # Update sheet
                   conn.update(worksheet="Sheet1", data=updated_df)
-                  st.success("✅ Review saved permanently!")
+                  
+                  # Cache clear taaki agla submit sahi ho
+                  st.cache_data.clear()
+                  
+                  st.success("✅ Permanent Save ho gaya!")
                   st.balloons()
               except Exception as e:
                   st.error(f"Error: {e}")
