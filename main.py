@@ -231,7 +231,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 # Temporary Request
-st.info("Please submit your review with us, we have just updated our review system so that, now I can read your reviews and ratings. Thanks for letting your support with us! Please Ignore if already submited.")
+st.info("Please submit your review with us, we have just updated our review system so that, now I can read your reviews and ratings. Thanks for letting your support with us! Please Ignore if already submited after 31/3/2026")
 
 if st.query_params.get("sitemap") == "true":
   sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
