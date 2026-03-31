@@ -113,7 +113,7 @@ with st.sidebar:
                   # Cache clear taaki agla submit sahi ho
                   st.cache_data.clear()
                   
-                  st.success("✅ Permanent Save ho gaya!")
+                  st.success("✅ Review Submited Successfully! ")
                   st.balloons()
               except Exception as e:
                   st.error(f"Error: {e}")
