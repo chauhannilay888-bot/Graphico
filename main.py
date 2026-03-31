@@ -92,11 +92,18 @@ with st.sidebar:
           else:
               try:
                   conn = st.connection("gsheets", type=GSheetsConnection)
-                  existing_data = conn.read(worksheet="Sheet1")
+                  
+                  # Existing data read karo, agar fail ho toh empty DF banao
+                  try:
+                      existing_data = conn.read(worksheet="Sheet1")
+                  except:
+                      existing_data = pd.DataFrame(columns=["rating", "review"])
+                  
                   new_row = pd.DataFrame([{"rating": rating, "review": review_text.strip()}])
-                  updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+                  updated_df = pd.concat([existing_data, new_row], ignore_index=True).dropna(how='all')
+                  
                   conn.update(worksheet="Sheet1", data=updated_df)
-                  st.success("✅ Review saved in Google Sheets!")
+                  st.success("✅ Review saved permanently!")
                   st.balloons()
               except Exception as e:
                   st.error(f"Error: {e}")
