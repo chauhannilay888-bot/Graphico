@@ -3,4 +3,3 @@ pandas
 plotly
 openpyxl
 st-gsheets-connection
-streamlit-star-rating
