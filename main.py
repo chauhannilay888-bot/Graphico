@@ -6,6 +6,7 @@ import plotly.express as px
 import os
 from PIL import Image
 import json
+from streamlit_gsheets import GSheetsConnection
 
 # --------- 1. GOOGLE ANALYTICS & CUSTOM CSS -----------
 ga_code = """
@@ -73,46 +74,32 @@ with st.sidebar:
     if df is not None:
       st.success("✅ Dataset Loaded!")
 
-  # --------- ⭐ REVIEW SYSTEM ----------
-  REVIEW_DATA_FILE = "feedback.json"
-
+  # --------- ⭐ GOOGLE SHEETS REVIEW SYSTEM ----------
   if "show_review" not in st.session_state:
       st.session_state.show_review = False
 
   if st.button("⭐ Review Us"):
       st.session_state.show_review = not st.session_state.show_review
 
-  def load_reviews():
-      if os.path.exists(REVIEW_DATA_FILE):
-          try:
-              with open(REVIEW_DATA_FILE, "r") as f:
-                  return json.load(f)
-          except:
-              return []
-      return []
-
-  def save_reviews(data):
-      with open(REVIEW_DATA_FILE, "w") as f:
-          json.dump(data, f, indent=4)
-
   if st.session_state.show_review:
       st.markdown("### 📝 Submit Review")
-
-      rating = st.selectbox("Rate us", [1, 2, 3, 4, 5], key="rev_rating")
-      review = st.text_area("Your Review", key="rev_text")
+      rating = st.selectbox("Rate us", [5, 4, 3, 2, 1], key="rev_rating")
+      review_text = st.text_area("Your Review", key="rev_text")
 
       if st.button("Submit", key="rev_submit"):
-          if not review.strip():
+          if not review_text.strip():
               st.warning("Write something first!")
           else:
-              data = load_reviews()
-              data.append({
-                  "rating": int(rating),
-                  "review": review.strip()
-              })
-              save_reviews(data)
-              st.success("✅ Thanks for your review!")
-
+              try:
+                  conn = st.connection("gsheets", type=GSheetsConnection)
+                  existing_data = conn.read(worksheet="Sheet1")
+                  new_row = pd.DataFrame([{"rating": rating, "review": review_text.strip()}])
+                  updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+                  conn.update(worksheet="Sheet1", data=updated_df)
+                  st.success("✅ Review saved in Google Sheets!")
+                  st.balloons()
+              except Exception as e:
+                  st.error(f"Error: {e}")
   # --------- END REVIEW SYSTEM ----------
 
   st.info("Developed with ❤️ by Nilay")
@@ -232,9 +219,9 @@ if st.query_params.get("sitemap") == "true":
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://graphico.streamlit.app</loc>
-    <lastmod>2026-03-28</lastmod>
+    <lastmod>2026-03-31</lastmod>
     <priority>1.0</priority>
   </url>
 </urlset>"""
-  st.write(sitemap_xml)
+  st.text(sitemap_xml)
   st.stop()
