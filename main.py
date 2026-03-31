@@ -35,7 +35,7 @@ components.html(ga_code, height=0)
 
 # ---------------- 2. PAGE CONFIG ----------------
 st.set_page_config(
-  page_title="Graphico Pro | AI-Powered Data Tool",
+  page_title="Graphico Pro 🚀 | AI-Powered Data Tool",
   page_icon="💎",
   layout="wide"
 )
