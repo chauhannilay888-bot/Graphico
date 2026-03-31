@@ -8,7 +8,6 @@ from PIL import Image
 import json
 import time
 from streamlit_gsheets import GSheetsConnection
-from streamlit_star_rating import st_star_rating   # ← Yeh line add ki hai
 
 # --------- 1. GOOGLE ANALYTICS & CUSTOM CSS -----------
 ga_code = """
@@ -75,7 +74,7 @@ with st.sidebar:
     if df is not None:
       st.success("✅ Dataset Loaded!")
 
-  # ==================== BEAUTIFUL REVIEW SYSTEM ====================
+  # ==================== BEAUTIFUL REVIEW SYSTEM (No extra package) ====================
   if st.button("⭐ Review Us", use_container_width=True, type="secondary"):
       st.session_state.show_review = True
 
@@ -83,20 +82,19 @@ with st.sidebar:
       with st.form("review_form"):
           st.markdown("### 📝 How was your experience with Graphico Pro?")
           
-          # Beautiful Star Rating
-          rating = st_star_rating(
-              label="Give us stars",
-              maxValue=5,
-              defaultValue=5,
-              size=45,
-              read_only=False,
-              customCSS="""
-                  .stStarRating { 
-                      justify-content: center; 
-                      margin: 15px 0;
-                  }
-              """
-          )
+          # Custom Star Rating using buttons
+          st.markdown("**Rate your experience:**")
+          cols = st.columns(5)
+          rating = st.session_state.get("temp_rating", 5)
+          
+          for i in range(5):
+              with cols[i]:
+                  if st.button("★" if i < rating else "☆", key=f"star_{i}", help=f"Give {i+1} stars"):
+                      rating = i + 1
+                      st.session_state.temp_rating = rating
+                      st.rerun()
+          
+          st.write(f"**Selected Rating: {rating} ⭐**")
           
           review_text = st.text_area(
               "Your valuable feedback / suggestions", 
@@ -110,6 +108,8 @@ with st.sidebar:
           with col2:
               if st.form_submit_button("Cancel", use_container_width=True):
                   st.session_state.show_review = False
+                  if "temp_rating" in st.session_state:
+                      del st.session_state.temp_rating
                   st.rerun()
 
           if submitted:
@@ -133,6 +133,8 @@ with st.sidebar:
                       st.balloons()
                       time.sleep(1.5)
                       st.session_state.show_review = False
+                      if "temp_rating" in st.session_state:
+                          del st.session_state.temp_rating
                       st.rerun()
                   except Exception as e:
                       st.error(f"Error saving review: {e}")
@@ -140,7 +142,7 @@ with st.sidebar:
   # --------- END REVIEW SYSTEM ----------
   st.info("Developed with ❤️ by Nilay")
 
-# ---------------- 5. MAIN APP LOGIC (bilkul same rakha hai) ----------------
+# ---------------- 5. MAIN APP LOGIC (tera pura code yahan same) ----------------
 if df is not None:
   all_cols = df.columns.tolist()
   num_cols = df.select_dtypes(include="number").columns.tolist()
@@ -214,9 +216,9 @@ if df is not None:
 
   else:  # Samples page
     st.title("Check before Using")
-    st.video("Tutorial.mp4")   # agar video hai toh
+    st.video("Tutorial.mp4")
     st.subheader("Taste it Nicely! ")
-    # tera samples code yahan same rahega
+    # tera samples code yahan same
 
 else:
   st.markdown("""
