@@ -242,3 +242,5 @@ if st.query_params.get("sitemap") == "true":
 </urlset>"""
   st.text(sitemap_xml)
   st.stop()
+# temporary request
+st.info("Please submit your review with us, we have just updated our review system so that, now I can read your reviews and ratings. Thanks for letting your support with us! ")
