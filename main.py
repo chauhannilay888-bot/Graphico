@@ -79,7 +79,7 @@ with st.sidebar:
       review_text = st.text_area("Your Review", key="rev_text")
       if st.button("Submit", key="rev_submit"):
           if not review_text.strip():
-              st.warning("Write something first!")
+              st.warning("Please write a review to submit")
           else:
               try:
                   # Connection with ttl=0 to avoid old data cache
