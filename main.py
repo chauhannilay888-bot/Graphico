@@ -71,7 +71,7 @@ with st.sidebar:
   # --------- ⭐ GOOGLE SHEETS REVIEW SYSTEM ----------
   if "show_review" not in st.session_state:
       st.session_state.show_review = False
-  if st.button("⭐ Review Us"):
+  if st.button("⭐ Click here to Review Us! "):
       st.session_state.show_review = not st.session_state.show_review
   if st.session_state.show_review:
       st.markdown("### 📝 Submit Review")
