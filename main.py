@@ -2,13 +2,14 @@ import streamlit as st
 import streamlit.components.v1 as components
 import io
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import os
 from PIL import Image
-import json
 from streamlit_gsheets import GSheetsConnection
-from sklearn.preprocessing import LabelEncoder, PolynomialFeatures
+from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
 # --------- 1. GOOGLE ANALYTICS & CUSTOM CSS -----------
@@ -21,12 +22,9 @@ ga_code = """
   gtag('config', 'G-FHN9KEP6KN');
 </script>
 <meta name="google-site-verification" content="zINnwjOarj-lAgHmEFrOPaihJvA5iwrmzhapCKGuqj0" />
-<meta name="msvalidate.01" content="ADE771C3184D04E01C54AFC606C27AA1" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-  html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-  }
+  html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
   .stMetric {
     background-color: #1e2130;
     padding: 15px;
@@ -45,20 +43,25 @@ st.set_page_config(
 )
 px.defaults.template = "plotly_dark"
 
-# ---------------- 3. DATA LOADING FUNCTION ----------------
+# ---------------- 3. CORE FUNCTIONS ----------------
 @st.cache_data
 def load_data(uploaded_file, ext):
   try:
     file_bytes = uploaded_file.getvalue()
-    if ext == "csv":
-      return pd.read_csv(io.BytesIO(file_bytes))
-    elif ext in ["xlsx", "xls"]:
-      return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
-    elif ext == "json":
-      return pd.read_json(io.BytesIO(file_bytes))
+    if ext == "csv": return pd.read_csv(io.BytesIO(file_bytes))
+    elif ext in ["xlsx", "xls"]: return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
+    elif ext == "json": return pd.read_json(io.BytesIO(file_bytes))
   except Exception as e:
     st.error(f"❌ File Load Error: {e}")
     return None
+
+def fill_missing_values(df):
+    for column in df.columns:
+        if df[column].dtype == 'object':
+            df[column] = df[column].fillna(df[column].mode()[0])
+        else:
+            df[column] = df[column].fillna(df[column].mean())
+    return df
 
 # ---------------- 4. SIDEBAR NAVIGATION ----------------
 with st.sidebar:
@@ -66,175 +69,214 @@ with st.sidebar:
   st.markdown("<p style='text-align: center; font-size: 0.8em;'>Empowering Your Data Journey</p>", unsafe_allow_html=True)
   st.divider()
   
-  page = st.radio("✨ Navigation", ["🏠 Home & Visualizer", "🔍 Raw Insights", "DS Hub", "📖 Samples"], index=0)
+  page = st.radio("✨ Navigation", ["🏠 Home & Visualizer", "🔍 Raw Insights", "🧠 DS Hub", "📖 Samples"], index=0)
   
   uploaded_file = st.file_uploader("Upload Dataset (CSV, Excel, JSON)", type=["csv", "xlsx", "xls", "json"])
   
-  df = None
   if uploaded_file:
     ext = uploaded_file.name.split(".")[-1].lower()
-    df = load_data(uploaded_file, ext)
-    if df is not None:
-      st.success("✅ Dataset Loaded!")
+    if 'df' not in st.session_state:
+        raw_df = load_data(uploaded_file, ext)
+        if raw_df is not None:
+            st.session_state.df = fill_missing_values(raw_df)
+    st.success("✅ Dataset Loaded!")
 
+  # --------- ⭐ REVIEW SYSTEM ----------
   st.divider()
-  if "show_review" not in st.session_state:
-    st.session_state.show_review = False
-
+  if "show_review" not in st.session_state: st.session_state.show_review = False
   st.caption("🚀 Review us to help Nilay unlock ML features!")
   if st.button("⭐ Click here to Review Us!", use_container_width=True):
-    st.session_state.show_review = not st.session_state.show_review
+      st.session_state.show_review = not st.session_state.show_review
 
   if st.session_state.show_review:
-    with st.expander("📝 Help Nilay Improve", expanded=True):
-      st.markdown("<p style='font-size: 0.8em;'>Your feedback as a student developer's fuel! ⛽</p>", unsafe_allow_html=True)
-      rating = st.selectbox("Rate us", [5, 4, 3, 2, 1], key="rev_rating")
-      review_text = st.text_area("Your thoughts...", placeholder="What should I add next?", key="rev_text")
-      
-      if st.button("Submit Review", key="rev_submit"):
-        if not review_text.strip():
-          st.warning("Please write a review to submit")
-        else:
-          try:
-            conn = st.connection("gsheets", type=GSheetsConnection)
-            try:
-              existing_data = conn.read(worksheet="Sheet1", ttl=0)
-            except:
-              existing_data = pd.DataFrame(columns=["rating", "review"])
-            
-            existing_data = existing_data.dropna(how='all')
-            new_row = pd.DataFrame([{"rating": int(rating), "review": review_text.strip()}])
-            updated_df = pd.concat([existing_data, new_row], ignore_index=True)
-            
-            conn.update(worksheet="Sheet1", data=updated_df)
-            st.cache_data.clear()
-            st.success("✅ Saved! You're a legend!")
-            st.balloons()
-            st.session_state.show_review = False
-          except Exception as e:
-            st.error(f"Error: {e}")
+      with st.expander("📝 Help Nilay Improve", expanded=True):
+          rating = st.selectbox("Rate us", [5, 4, 3, 2, 1], key="rev_rating")
+          review_text = st.text_area("Your thoughts...", placeholder="What should I add next?", key="rev_text")
+          if st.button("Submit Review", key="rev_submit"):
+              if review_text.strip():
+                  try:
+                      conn = st.connection("gsheets", type=GSheetsConnection)
+                      existing_data = conn.read(worksheet="Sheet1", ttl=0)
+                      new_row = pd.DataFrame([{"rating": int(rating), "review": review_text.strip()}])
+                      updated_df = pd.concat([existing_data, new_row], ignore_index=True).dropna(how='all')
+                      conn.update(worksheet="Sheet1", data=updated_df)
+                      st.cache_data.clear()
+                      st.success("✅ Saved! You're a legend!")
+                      st.balloons()
+                      st.session_state.show_review = False
+                  except Exception as e: st.error(f"Error: {e}")
+              else: st.warning("Please write something!")
   
   st.info("Developed with ❤️ by Nilay")
 
 # ---------------- 5. MAIN LOGIC ----------------
-if df is not None:
+if 'df' in st.session_state:
+  df = st.session_state.df
   all_cols = df.columns.tolist()
-  num_cols = df.select_dtypes(include="number").columns.tolist()
-
-  st.toast("Enjoying the tool? Don't forget to leave a review in the sidebar! ⭐", icon="🚀")
+  num_cols = df.select_dtypes(include=np.number).columns.tolist()
+  st.toast("Enjoying the tool? Leave a review! ⭐", icon="🚀")
 
   if page == "🏠 Home & Visualizer":
-    # (UNCHANGED - your original code remains)
-    pass
+    st.markdown("<h2 style='color: #4facfe;'>📊 Professional Data Visualizer</h2>", unsafe_allow_html=True)
+    m1, m2, m3 = st.columns(3)
+    m1.metric("📈 Rows", df.shape[0])
+    m2.metric("📋 Columns", df.shape[1])
+    m3.metric("⚠️ Missing Cells", int(df.isnull().sum().sum()))
+    st.divider()
+
+    # Chart Settings
+    st.sidebar.header("🎨 Graph Settings")
+    g_type = st.sidebar.selectbox("Chart Type", ["Auto Suggestion","Bar","Line","Scatter","Pie","Histogram","Box","Area","Heatmap"])
+    chart_title = st.sidebar.text_input("Chart Title", "My Analysis")
+    x_ax = st.sidebar.selectbox("X-Axis", all_cols)
+    y_ax = st.sidebar.selectbox("Y-Axis (Numeric)", num_cols) if num_cols else None
+    
+    st.subheader("🔍 Filter Data")
+    f_col = st.selectbox("Select column to filter", all_cols)
+    u_vals = df[f_col].dropna().unique().tolist()
+    s_vals = st.multiselect("Select Values", u_vals, default=u_vals[:5] if len(u_vals)>5 else u_vals)
+    df_filtered = df[df[f_col].isin(s_vals)]
+    
+    if g_type == "Auto Suggestion":
+      g_type = "Scatter" if len(num_cols) >= 2 else "Bar"
+      st.info(f"✨ Suggested: {g_type} Chart")
+    
+    try:
+      fig = None
+      if g_type == "Heatmap":
+        corr = df_filtered.corr(numeric_only=True)
+        if not corr.empty: fig = px.imshow(corr, text_auto=True, title="Correlation Heatmap")
+      elif y_ax:
+        if g_type == "Bar": fig = px.bar(df_filtered, x=x_ax, y=y_ax, title=chart_title)
+        elif g_type == "Line": fig = px.line(df_filtered, x=x_ax, y=y_ax, title=chart_title)
+        elif g_type == "Scatter": fig = px.scatter(df_filtered, x=x_ax, y=y_ax, title=chart_title)
+        elif g_type == "Pie": fig = px.pie(df_filtered, names=x_ax, values=y_ax, title=chart_title)
+        elif g_type == "Histogram": fig = px.histogram(df_filtered, x=y_ax, title=chart_title)
+        elif g_type == "Box": fig = px.box(df_filtered, x=x_ax, y=y_ax, title=chart_title)
+        elif g_type == "Area": fig = px.area(df_filtered, x=x_ax, y=y_ax, title=chart_title)
+      
+      if fig: st.plotly_chart(fig, use_container_width=True)
+      else: st.warning("Please select a numeric Y-axis for this chart.")
+    except Exception as e: st.error(f"Visualization Error: {e}")
+    
+    csv = df_filtered.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Download Filtered Data (CSV)", csv, "graphico_report.csv", "text/csv")
 
   elif page == "🔍 Raw Insights":
-    # (UNCHANGED)
-    pass
+    st.markdown("<h2 style='color: #00f2fe;'>🧠 Technical Data Insights</h2>", unsafe_allow_html=True)
+    st.subheader("Data Preview")
+    st.dataframe(df, use_container_width=True)
+    col1, col2 = st.columns(2)
+    with col1:
+      st.subheader("📊 Descriptive Statistics")
+      st.write(df.describe())
+    with col2:
+      st.subheader("🛠️ Column Metadata")
+      st.dataframe(pd.DataFrame(df.dtypes, columns=["Type"]).astype(str))
+    st.divider()
+    st.subheader("❌ Missing Values Check")
+    st.write(df.isnull().sum())
 
-  elif page == "DS Hub":
+  elif page == "🧠 DS Hub":
     st.title("Welcome to DS Mastermind's Hub 🧠💡")
-    df = pd.DataFrame(df)
+    
+    # 1. Encoding Section
+    st.subheader("Step 1: Categorical Encoding")
+    enc_method = st.selectbox("Encoding Method", ["Label Encoding", "One-Hot Encoding"], key="ds_enc")
+    enc_col = st.selectbox("Column to encode", all_cols, key="ds_enc_col")
+    
+    if st.button("Apply Encoding"):
+        if df[enc_col].dtype == 'object':
+            if enc_method == "Label Encoding":
+                le = LabelEncoder()
+                df[f"{enc_col}_encoded"] = le.fit_transform(df[enc_col].astype(str))
+            else:
+                df = pd.get_dummies(df, columns=[enc_col], prefix=enc_col)
+            st.session_state.df = df
+            st.success("Success! Check the updated data below.")
+        else: st.info("Column is already numeric!")
+    st.write(df.head())
 
-    # ✅ ADDED (safe)
-    if "df" not in st.session_state:
-      st.session_state["df"] = df
+    st.divider()
 
-    # ---- your encoding + missing value code (UNCHANGED) ----
-    option_2 = st.selectbox(
-      "Encode categorical variables with",
-      ("Label Encoding (for 2 categories)", "One-Hot Encoding (for more than 2 categories)"),
-      key="encoding_method"
-    )
+    # 2. Work Options
+    work_options = st.radio("What would you like to do?", ("Make Predictions", "Edit DataFrame"), horizontal=True)
 
-    if option_2 == "Label Encoding (for 2 categories)":
-      colm = st.selectbox("Select a column to encode", df.columns, key="column_to_encode")
-      if df[colm].dtype != 'object':
-        st.info("No need to encode this column as it is numeric.")
-      le = LabelEncoder()
-      name = colm.lower().replace(" ", "_") + "_encoded"
-      df[name] = le.fit_transform(df[colm])
-
-    elif option_2 == "One-Hot Encoding (for more than 2 categories)":
-      colm = st.selectbox("Select a column to encode", df.columns, key="column_to_one_hot_encode")
-      if df[colm].dtype != 'object':
-        st.info("No need to encode this column as it is numeric.")
-      df = pd.get_dummies(df, columns=[colm], prefix=colm.lower().replace(" ", "_"))
-
-    st.write(df)
-
-    def fill_missing_values(df):
-      for column in df.columns:
-        if df[column].dtype == 'object':
-          df[column] = df[column].fillna(df[column].mode()[0])
-        else:
-          df[column] = df[column].fillna(df[column].mean())
-      return df
-
-    fill_missing_values(df)
-
-    st.info("✨ No need to worry about missing values, mastermind budy has taken care of it for you!")
-
-    work_options = st.radio(
-      "What would you like to do?",
-      ("Make Predictions", "Edit DataFrame"),
-      key="work_options"
-    )
-
-    # ✅ FIXED SECTION ONLY
     if work_options == "Edit DataFrame":
-      edit_option = st.selectbox(
-        "Choose the work to do with DataFrame",
-        ("Replace a value", "Remove a row", "Remove a column"),
-        key="edit_options"
-      )
+        edit_option = st.selectbox("Action", ("Replace a value", "Remove a row", "Remove a column"))
+        if edit_option == "Remove a column":
+            c_remove = st.selectbox("Select column", df.columns, key="rem_col")
+            if st.button("Remove Column"):
+                st.session_state.df = df.drop(columns=[c_remove])
+                st.rerun()
+        elif edit_option == "Remove a row":
+            r_remove = st.number_input("Index number", 0, len(df)-1)
+            if st.button("Remove Row"):
+                st.session_state.df = df.drop(index=r_remove)
+                st.rerun()
+        elif edit_option == "Replace a value":
+            c_rep = st.selectbox("Column", df.columns, key="rep_c")
+            idx_rep = st.number_input("Index", 0, len(df)-1, key="rep_i")
+            val_rep = st.text_input("New Value")
+            if st.button("Replace"):
+                df.at[idx_rep, c_rep] = val_rep
+                st.session_state.df = df
+                st.success("Value Replaced!")
 
-      df = st.session_state.get("df", df)
+    else:
+        st.subheader("🤖 AI Predictions")
+        if len(num_cols) < 2:
+            st.error("Need at least 2 numeric columns for predictions. Go to Encoding first!")
+        else:
+            X_col = st.selectbox("Training Feature (X)", num_cols)
+            y_col = st.selectbox("Predict Target (y)", num_cols)
+            model_type = st.radio("Model Selection", ["Model 1 (Linear)", "Model 2 (Polynomial)"])
+            
+            if model_type == "Model 1 (Linear)":
+                model = LinearRegression().fit(df[[X_col]], df[y_col])
+                test_val = st.number_input("Value to predict", key="p1")
+                if st.button("Predict"):
+                    res = model.predict([[test_val]])
+                    st.metric("Predicted Value", f"{res[0]:.2f}")
+            else:
+                deg = st.slider("Complexity Degree", 2, 5, 2)
+                model = make_pipeline(PolynomialFeatures(deg), LinearRegression())
+                model.fit(df[[X_col]], df[y_col])
+                test_val = st.number_input("Value to predict", key="p2")
+                if st.button("Smart Predict"):
+                    res = model.predict([[test_val]])
+                    st.metric("Smart Prediction", f"{res[0]:.2f}")
 
-      if edit_option == "Replace a value":
-        column_to_replace = st.selectbox("Select a column to replace values", df.columns, key="replacement_column")
-        index_number = st.number_input("Enter the index number of the value to replace", min_value=0, step=1, key="replacement_index")
-        new_value = st.text_input("Enter the new value", key="replacement_new_value")
+  elif page == "📖 Samples":
+    st.title("Check before Using")
+    st.video("Tutorial.mp4")
+    st.subheader("Taste it Nicely! ")
+    if os.path.exists("tutorial_PNGs"):
+        files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
+        for i in range(0, len(files), 4):
+          cols = st.columns(4)
+          for j, col in enumerate(cols):
+            if i+j < len(files):
+              col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
+    else: st.warning("Tutorial folder not found locally.")
 
-        if st.button("Replace Value", key="replace_button"):
-          try:
-            index_number = int(index_number)
-            if pd.api.types.is_numeric_dtype(df[column_to_replace]):
-              new_value = float(new_value)
+else:
+  st.markdown("""
+    <div style='text-align: center; padding: 50px;'>
+      <h1 style='font-size: 3.5em; color: #4facfe;'>💎 Graphico Pro</h1>
+      <p style='font-size: 1.2em; color: #a1a1a1;'>Your Smartest Data Companion</p>
+      <br>
+      <div style='background-color: #1e2130; padding: 20px; border-radius: 15px; border: 1px solid #4facfe;'>
+        <p>👈 <b>Start by uploading your dataset in the sidebar.</b></p>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-            df.at[index_number, column_to_replace] = new_value
-
-            st.success("Value replaced successfully!")
-            st.session_state["df"] = df
-            st.write(df)
-
-          except Exception as e:
-            st.error(f"Error: {e}")
-
-      elif edit_option == "Remove a row":
-        index_to_remove = st.number_input("Enter the index number of the row to remove", min_value=0, step=1, key="row_removal_index")
-
-        if st.button("Remove Row", key="remove_row_button"):
-          try:
-            df.drop(index=int(index_to_remove), inplace=True)
-            df.reset_index(drop=True, inplace=True)
-
-            st.success("Row removed successfully!")
-            st.session_state["df"] = df
-            st.write(df)
-
-          except Exception as e:
-            st.error(f"Error: {e}")
-
-      elif edit_option == "Remove a column":
-        column_to_remove = st.selectbox("Select a column to remove", df.columns, key="column_removal")
-
-        if st.button("Remove Column", key="remove_column_button"):
-          try:
-            df.drop(columns=[column_to_remove], inplace=True)
-
-            st.success("Column removed successfully!")
-            st.session_state["df"] = df
-            st.write(df)
-
-          except Exception as e:
-            st.error(f"Error: {e}")
+# Sitemap XML Logic
+if st.query_params.get("sitemap") == "true":
+  sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://graphico.streamlit.app</loc><lastmod>2026-04-01</lastmod><priority>1.0</priority></url>
+</urlset>"""
+  st.text(sitemap_xml)
+  st.stop()
