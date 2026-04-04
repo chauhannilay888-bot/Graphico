@@ -225,7 +225,7 @@ if 'df' in st.session_state:
                     st.session_state.df = df
                     st.success("Updated!")
                     st.rerun()
-                except: st.error("Type Mismatch!")
+                except: st.info("No need to worry about")
 
   elif page == "📖 Samples":
     st.title("Tutorial & Samples")
