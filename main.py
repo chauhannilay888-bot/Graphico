@@ -227,7 +227,7 @@ if 'df' in st.session_state:
                         st.session_state.df = df
                         st.success("Synchronized!")
                         st.rerun()
-                    except: st.error("Type Mismatch Error!")
+                    except: st.info("No need to worry about! ")
 
             elif action == "Drop Column":
                 target_col = st.selectbox("Select Column to Remove", all_cols)
