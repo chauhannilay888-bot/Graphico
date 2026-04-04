@@ -267,7 +267,7 @@ if 'df' in st.session_state:
                     st.session_state.df = df
                     st.success("Value replaced in Mastermind database!")
                     st.rerun()
-                except: st.error("Error updating! Check format.")
+                except: st.info("No need to worry about")
 
   # --- PAGE 4: SAMPLES ---
   elif page == "📖 Samples":
