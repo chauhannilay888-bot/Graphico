@@ -12,7 +12,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
-# --------- 1. PREMIUM UI & MASTERMIND CSS -----------
+# --------- 1. ULTRA-PREMIUM UI CSS -----------
 ga_code = """
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHN9KEP6KN"></script>
 <script>
@@ -68,9 +68,9 @@ st.set_page_config(
 )
 px.defaults.template = "plotly_dark"
 
-# ---------------- 3. ROBUST CLEANING LOGIC ----------------
+# ---------------- 3. ANTI-TABAHI CLEANING LOGIC ----------------
 def smart_clean_df(df):
-    """Refined logic to handle all edge cases for missing data"""
+    """Handles missing values without crashing, regardless of data type"""
     df_clean = df.copy()
     for col in df_clean.columns:
         if df_clean[col].isnull().any():
@@ -106,7 +106,6 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Upload Failed: {e}")
 
-    # Sidebar Footer
     st.divider()
     if st.button("🌟 Support Nilay", use_container_width=True):
         st.session_state.review_active = not st.session_state.get("review_active", False)
@@ -125,20 +124,18 @@ with st.sidebar:
                     st.success("Review Logged! 🚀")
                     st.balloons()
                     st.session_state.review_active = False
-                except: st.error("Link Error!")
+                except: st.error("Link Error! Check GSheets Connection.")
     
     st.caption("Crafted with ❤️ by Nilay")
 
-# ---------------- 5. MAIN APPLICATION LOGIC ----------------
+# ---------------- 5. MAIN LOGIC ----------------
 if 'df' in st.session_state:
     df = st.session_state.df
     all_cols = df.columns.tolist()
     num_cols = df.select_dtypes(include=np.number).columns.tolist()
 
-    # --- PAGE 1: DASHBOARD ---
     if page == "🏠 Dashboard":
         st.markdown("<h1 class='gradient-text'>📊 Visualization Dashboard</h1>", unsafe_allow_html=True)
-        
         m1, m2, m3 = st.columns(3)
         m1.metric("📦 Total Rows", df.shape[0])
         m2.metric("📐 Feature Count", df.shape[1])
@@ -171,97 +168,72 @@ if 'df' in st.session_state:
                     fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), hovermode="x unified")
                     st.plotly_chart(fig, use_container_width=True)
                 else:
-                    st.warning("⚠️ Select a Numeric Column for Y-Axis to generate a chart.")
-            except Exception as e: st.error(f"Viz Logic Error: {e}")
+                    st.warning("⚠️ Select a Numeric Column for Y-Axis.")
+            except Exception as e: st.error(f"Viz Error: {e}")
 
-    # --- PAGE 2: RAW ANALYTICS ---
     elif page == "🔍 Raw Analytics":
         st.markdown("<h1 class='gradient-text'>🔍 Insight Engine</h1>", unsafe_allow_html=True)
-        st.subheader("Interactive Data Explorer")
         st.dataframe(df, use_container_width=True)
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("#### 📊 Descriptive Stats")
-            st.write(df.describe())
-        with c2:
-            st.markdown("#### 🛠️ Structural Info")
-            st.table(pd.DataFrame(df.dtypes, columns=["Type"]).astype(str))
+        st.write("#### 📊 Descriptive Stats", df.describe())
 
-    # --- PAGE 3: ML HUB (FIXED SURGERY) ---
     elif page == "🧠 ML Hub":
         st.markdown("<h1 class='gradient-text'>🧠 ML & Data Surgeon Hub</h1>", unsafe_allow_html=True)
         t_ai, t_surgeon = st.tabs(["✨ AI Predictions", "🛠️ Data Surgeon"])
         
         with t_ai:
             if len(num_cols) >= 2:
-                col_x, col_y = st.columns(2)
-                X_f = col_x.selectbox("Training Feature (X)", num_cols)
-                y_f = col_y.selectbox("Target Label (y)", num_cols)
-                
-                in_val = st.number_input(f"Enter {X_f} Value:", value=0.0)
+                c_x, c_y = st.columns(2)
+                X_f = c_x.selectbox("Feature (X)", num_cols)
+                y_f = c_y.selectbox("Target (y)", num_cols)
+                in_val = st.number_input(f"Enter {X_f}:", value=0.0)
                 if st.button("🚀 Forecast Now"):
                     model = LinearRegression().fit(df[[X_f]].values, df[y_f].values)
                     pred = model.predict([[in_val]])
                     st.metric(f"Predicted {y_f}", f"{pred[0]:.4f}")
-                    st.confetti()
-            else: st.error("Add more numeric data for AI Models!")
+                    st.balloons()
+            else: st.error("Need more numeric data for AI!")
 
         with t_surgeon:
             st.subheader("Live Database Modification")
             action = st.selectbox("Select Surgery Type", ["Update Value", "Drop Column", "Drop Row"])
             
             if action == "Update Value":
-                col_sel = st.selectbox("Select Column", all_cols)
-                idx_sel = st.number_input("Row Index", 0, len(df)-1)
+                col_s = st.selectbox("Column", all_cols)
+                idx_s = st.number_input("Index", 0, len(df)-1)
+                curr_val = df.at[idx_s, col_s]
                 
-                if pd.api.types.is_numeric_dtype(df[col_sel]):
-                    new_v = st.number_input("New Numeric Value", value=float(df.at[idx_sel, col_sel]))
+                if pd.api.types.is_numeric_dtype(df[col_s]):
+                    new_v = st.number_input("New Value", value=float(curr_val))
                 else:
-                    new_v = st.text_input("New Text Value", value=str(df.at[idx_sel, col_sel]))
+                    new_v = st.text_input("New Value", value=str(curr_val))
                 
                 if st.button("Apply Transformation"):
                     try:
-                        # Dynamic Casting and Assignment
-                        df.at[idx_sel, col_sel] = type(df[col_sel].iloc[0])(new_v)
+                        df.at[idx_s, col_s] = type(df[col_s].iloc[0])(new_v)
                         st.session_state.df = df
                         st.success("Synchronized!")
                         st.rerun()
-                    except: st.info("No need to worry about! ")
+                    except: st.error("Type Mismatch!")
 
             elif action == "Drop Column":
-                target_col = st.selectbox("Select Column to Remove", all_cols)
-                st.warning(f"Permanently delete '{target_col}'?")
+                target_col = st.selectbox("Remove Column", all_cols)
                 if st.button("🔥 Confirm Deletion"):
-                    updated_df = df.drop(columns=[target_col])
-                    st.session_state.df = updated_df
-                    st.toast(f"Column '{target_col}' removed!", icon="🗑️")
+                    st.session_state.df = df.drop(columns=[target_col])
+                    st.toast(f"Column '{target_col}' removed!")
                     st.rerun()
 
             elif action == "Drop Row":
-                target_row = st.number_input("Enter Index to Remove", 0, len(df)-1)
-                st.warning(f"Permanently delete Row Index {target_row}?")
+                target_row = st.number_input("Remove Index", 0, len(df)-1)
                 if st.button("🗑️ Confirm Removal"):
-                    updated_df = df.drop(index=target_row).reset_index(drop=True)
-                    st.session_state.df = updated_df
-                    st.toast(f"Row {target_row} deleted!", icon="✂️")
+                    st.session_state.df = df.drop(index=target_row).reset_index(drop=True)
+                    st.toast(f"Row {target_row} deleted!")
                     st.rerun()
 
-    # --- PAGE 4: SAMPLES ---
     elif page == "📖 Sample Vault":
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
         if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
-        
-        st.subheader("Visual Sample Gallery")
-        if os.path.exists("tutorial_PNGs"):
-            f_list = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
-            for i in range(0, len(f_list), 4):
-                cols = st.columns(4)
-                for j, c in enumerate(cols):
-                    if i+j < len(f_list):
-                        c.image(Image.open(os.path.join("tutorial_PNGs", f_list[i+j])), use_container_width=True)
+        else: st.info("Tutorial video coming soon!")
 
-# --- LANDING PAGE ---
 else:
     st.markdown("""
     <div style='text-align: center; padding: 100px 0;'>
@@ -269,18 +241,15 @@ else:
       <p style='font-size: 1.8em; color: #a1a1a1; margin-top: 0;'>The Professional Data Studio by Nilay</p>
       <br><br>
       <div style='display: flex; justify-content: center; gap: 30px;'>
-        <div class='card-box' style='width: 300px;'><h3>⚡ Fast</h3><p>Instant visualization for complex data.</p></div>
-        <div class='card-box' style='width: 300px;'><h3>🧠 Smart</h3><p>Predict trends using ML logic.</p></div>
-        <div class='card-box' style='width: 300px;'><h3>🛠️ Reliable</h3><p>Pro data cleaning & surgery tools.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>⚡ Fast</h3><p>Instant visualization for any file.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>🧠 Smart</h3><p>Built-in AI forecasting logic.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>🛠️ Reliable</h3><p>Full-scale data surgery tools.</p></div>
       </div>
-      <br><br><br>
-      <div style='background: rgba(79, 172, 254, 0.1); padding: 25px; border-radius: 50px; display: inline-block; border: 2px dashed #4facfe;'>
-        <h4 style='margin:0; color: #4facfe;'>👈 Drag & Drop your Dataset in the Sidebar to Launch</h4>
-      </div>
+      <br><br>
+      <h4 style='color: #4facfe;'>👈 Upload your Dataset in the Sidebar to Launch Engine</h4>
     </div>
     """, unsafe_allow_html=True)
 
-# Sitemap Check
 if st.query_params.get("sitemap") == "true":
     st.text("Engine Status: 100% Operational")
     st.stop()
