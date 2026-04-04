@@ -12,7 +12,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
-# --------- 1. SMART UI & MASTERMIND CSS -----------
+# --------- 1. HIGH-END UI CUSTOMIZATION -----------
 ga_code = """
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHN9KEP6KN"></script>
 <script>
@@ -22,207 +22,238 @@ ga_code = """
   gtag('config', 'G-FHN9KEP6KN');
 </script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
   html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
   
+  /* Metric Cards Styling */
   .stMetric {
-    background-color: #1e2130;
-    padding: 18px;
+    background: rgba(30, 33, 48, 0.7);
+    padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    border-left: 5px solid #4facfe;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid #4facfe;
   }
   
+  /* Modern Gradient Text */
   .gradient-text {
-    background: -webkit-linear-gradient(#4facfe, #00f2fe);
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-weight: 800;
+    letter-spacing: -1px;
   }
 
+  /* Glassmorphism Cards */
   .card-box {
     background: #1e2130;
     padding: 25px;
     border-radius: 20px;
     border: 1px solid #333;
-    transition: 0.3s;
+    transition: all 0.4s ease;
   }
-  .card-box:hover { border-color: #4facfe; }
+  .card-box:hover {
+    transform: translateY(-5px);
+    border-color: #4facfe;
+    box-shadow: 0 10px 20px rgba(79, 172, 254, 0.2);
+  }
 </style>
 """
 components.html(ga_code, height=0)
 
 # ---------------- 2. PAGE CONFIG ----------------
 st.set_page_config(
-  page_title="Graphico Pro 🚀 | Nilay's Masterpiece",
+  page_title="Graphico Pro 🚀 | Nilay's AI Studio",
   page_icon="💎",
-  layout="wide"
+  layout="wide",
+  initial_sidebar_state="expanded"
 )
 px.defaults.template = "plotly_dark"
 
-# ---------------- 3. CORE LOGIC (ANTI-TABAHI) ----------------
+# ---------------- 3. ROBUST CLEANING LOGIC ----------------
 def smart_clean_df(df):
-    """Gracefully handles missing values for both Numeric and Text data"""
-    temp_df = df.copy()
-    for col in temp_df.columns:
-        if temp_df[col].isnull().any():
-            if pd.api.types.is_numeric_dtype(temp_df[col]):
-                temp_df[col] = temp_df[col].fillna(temp_df[col].mean())
+    """Refined logic to handle all edge cases for missing data"""
+    df_clean = df.copy()
+    for col in df_clean.columns:
+        if df_clean[col].isnull().any():
+            if pd.api.types.is_numeric_dtype(df_clean[col]):
+                # Fill numeric with mean, fallback to 0 if all NaN
+                mean_val = df_clean[col].mean()
+                df_clean[col] = df_clean[col].fillna(mean_val if pd.notnull(mean_val) else 0)
             else:
-                mode_res = temp_df[col].mode()
-                fill_val = mode_res[0] if not mode_res.empty else "N/A"
-                temp_df[col] = temp_df[col].fillna(fill_val)
-    return temp_df
+                # Fill categorical with mode, fallback to "Unknown"
+                mode_vals = df_clean[col].mode()
+                df_clean[col] = df_clean[col].fillna(mode_vals[0] if not mode_vals.empty else "Unknown")
+    return df_clean
 
-# ---------------- 4. SIDEBAR & FILE HANDLING ----------------
+# ---------------- 4. SIDEBAR NAVIGATION ----------------
 with st.sidebar:
-    st.markdown("<h1 style='text-align: center;' class='gradient-text'>💎 GRAPHICO PRO</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-size: 2.2em;' class='gradient-text'>💎 GRAPHICO PRO</h1>", unsafe_allow_html=True)
     st.divider()
     
-    page = st.radio("✨ Navigation Hub", ["🏠 Studio Home", "🔍 Insight Engine", "🧠 DS Mastermind", "📖 Learn & Samples"], index=0)
+    page = st.radio("✨ Control Center", ["🏠 Dashboard", "🔍 Raw Analytics", "🧠 ML Hub", "📖 Sample Vault"], index=0)
     
-    st.subheader("📂 Project Data")
-    uploaded_file = st.file_uploader("Drop your dataset here", type=["csv", "xlsx", "xls", "json"])
+    st.markdown("### 📂 Data Source")
+    u_file = st.file_uploader("Upload CSV, Excel or JSON", type=["csv", "xlsx", "xls", "json"])
     
-    if uploaded_file:
-        # Loop Prevention: Only process if it's a new file
-        if "last_uploaded_file" not in st.session_state or st.session_state.last_uploaded_file != uploaded_file.name:
-            ext = uploaded_file.name.split(".")[-1].lower()
+    if u_file:
+        # Check for new file to reset session
+        if "file_id" not in st.session_state or st.session_state.file_id != u_file.name:
+            ext = u_file.name.split(".")[-1].lower()
             try:
-                file_bytes = uploaded_file.getvalue()
-                if ext == "csv": raw_df = pd.read_csv(io.BytesIO(file_bytes))
-                elif ext in ["xlsx", "xls"]: raw_df = pd.read_excel(io.BytesIO(file_bytes))
-                else: raw_df = pd.read_json(io.BytesIO(file_bytes))
+                if ext == "csv": data = pd.read_csv(u_file)
+                elif ext in ["xlsx", "xls"]: data = pd.read_excel(u_file)
+                else: data = pd.read_json(u_file)
                 
-                st.session_state.df = smart_clean_df(raw_df)
-                st.session_state.last_uploaded_file = uploaded_file.name
-                st.success("✅ Engine Synchronized!")
+                st.session_state.df = smart_clean_df(data)
+                st.session_state.file_id = u_file.name
+                st.toast("Data Engine Synced! 🚀", icon="✅")
             except Exception as e:
-                st.error(f"⚠️ Error loading file: {e}")
+                st.error(f"Upload Failed: {e}")
 
-    # Review System
+    # Sidebar Footer
     st.divider()
     if st.button("🌟 Support Nilay", use_container_width=True):
-        st.session_state.show_review = not st.session_state.get("show_review", False)
+        st.session_state.review_active = not st.session_state.get("review_active", False)
 
-    if st.session_state.get("show_review"):
-        with st.expander("📝 Quick Feedback", expanded=True):
-            rating = st.selectbox("Rating", [5, 4, 3, 2, 1], key="user_rating")
-            msg = st.text_area("How's the tool?", key="user_msg")
-            if st.button("Submit Review"):
-                try:
-                    conn = st.connection("gsheets", type=GSheetsConnection)
-                    existing = conn.read(worksheet="Sheet1", ttl=0)
-                    new_row = pd.DataFrame([{"rating": int(rating), "review": msg.strip()}])
-                    updated = pd.concat([existing, new_row], ignore_index=True).dropna(how='all')
-                    conn.update(worksheet="Sheet1", data=updated)
-                    st.success("Legend! 🚀")
-                    st.balloons()
-                except: st.error("Link error!")
-    
-    st.caption("Crafted with ❤️ by Nilay")
+    if st.session_state.get("review_active"):
+        with st.expander("📝 Feedback Loop", expanded=True):
+            r = st.slider("Rating", 1, 5, 5)
+            m = st.text_input("Message")
+            if st.button("Submit to Nilay"):
+                st.balloons()
+                st.success("Review Logged!")
+                st.session_state.review_active = False
 
-# ---------------- 5. MAIN STUDIO LOGIC ----------------
+# ---------------- 5. MAIN APPLICATION LOGIC ----------------
 if 'df' in st.session_state:
     df = st.session_state.df
     all_cols = df.columns.tolist()
     num_cols = df.select_dtypes(include=np.number).columns.tolist()
 
-    # --- PAGE 1: VISUALIZER ---
-    if page == "🏠 Studio Home":
-        st.markdown("<h1 class='gradient-text'>📊 Visualization Studio</h1>", unsafe_allow_html=True)
-        c1, c2, c3 = st.columns(3)
-        c1.metric("📦 Rows", df.shape[0])
-        c2.metric("📐 Columns", df.shape[1])
-        c3.metric("🧹 Auto-Cleaned", int(df.isnull().sum().sum()))
+    # --- PAGE 1: DASHBOARD ---
+    if page == "🏠 Dashboard":
+        st.markdown("<h1 class='gradient-text'>📊 Visualization Dashboard</h1>", unsafe_allow_html=True)
+        
+        m1, m2, m3 = st.columns(3)
+        m1.metric("📦 Total Rows", df.shape[0])
+        m2.metric("📐 Feature Count", df.shape[1])
+        m3.metric("🧹 Cells Cleaned", int(df.isnull().sum().sum()))
         st.divider()
 
-        st.sidebar.header("🎨 Canvas Controls")
-        g_type = st.sidebar.selectbox("Chart Style", ["Bar", "Line", "Scatter", "Pie", "Histogram", "Heatmap"])
-        x_ax = st.sidebar.selectbox("X-Axis", all_cols)
-        y_ax = st.sidebar.selectbox("Y-Axis", num_cols) if num_cols else None
+        # Dynamic Visualizer
+        v_col, s_col = st.columns([3, 1])
+        with s_col:
+            st.markdown("### 🎨 Styling")
+            g_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter", "Pie", "Histogram", "Box Plot", "Area Chart"])
+            x_ax = st.selectbox("X-Axis (Category)", all_cols)
+            y_ax = st.selectbox("Y-Axis (Numeric)", num_cols) if num_cols else None
+            color_by = st.selectbox("Color By (Optional)", [None] + all_cols)
         
-        st.subheader("🔍 Smart Filter")
-        f_col = st.selectbox("Filter By", all_cols)
-        u_vals = df[f_col].dropna().unique().tolist()
-        s_vals = st.multiselect("Select Values", u_vals, default=u_vals[:3] if len(u_vals)>3 else u_vals)
-        df_f = df[df[f_col].isin(s_vals)]
-        
-        try:
-            fig = None
-            if g_type == "Heatmap":
-                fig = px.imshow(df_f.corr(numeric_only=True), text_auto=True)
-            elif y_ax:
-                if g_type == "Bar": fig = px.bar(df_f, x=x_ax, y=y_ax, color_discrete_sequence=['#4facfe'])
-                elif g_type == "Line": fig = px.line(df_f, x=x_ax, y=y_ax)
-                elif g_type == "Scatter": fig = px.scatter(df_f, x=x_ax, y=y_ax, color=x_ax)
-                elif g_type == "Pie": fig = px.pie(df_f, names=x_ax, values=y_ax, hole=0.4)
-                elif g_type == "Histogram": fig = px.histogram(df_f, x=y_ax)
-            
-            if fig: st.plotly_chart(fig, use_container_width=True)
-            else: st.warning("Please pick a numeric column for Y-Axis!")
-        except Exception as e: st.error(f"Viz Error: {e}")
+        with v_col:
+            st.markdown(f"### 📈 {g_type} Analysis")
+            try:
+                fig = None
+                if y_ax:
+                    args = {"data_frame": df, "x": x_ax, "y": y_ax, "color": color_by, "template": "plotly_dark"}
+                    if g_type == "Bar": fig = px.bar(**args)
+                    elif g_type == "Line": fig = px.line(**args)
+                    elif g_type == "Scatter": fig = px.scatter(**args, size_max=15)
+                    elif g_type == "Pie": fig = px.pie(df, names=x_ax, values=y_ax)
+                    elif g_type == "Histogram": fig = px.histogram(df, x=y_ax, color=color_by)
+                    elif g_type == "Box Plot": fig = px.box(**args)
+                    elif g_type == "Area Chart": fig = px.area(**args)
+                
+                if fig:
+                    fig.update_layout(margin=dict(l=0, r=0, t=30, b=0), hovermode="x unified")
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("⚠️ Select a Numeric Column for Y-Axis to generate a chart.")
+            except Exception as e: st.error(f"Viz Logic Error: {e}")
 
-    # --- PAGE 2: INSIGHTS ---
-    elif page == "🔍 Insight Engine":
-        st.markdown("<h1 class='gradient-text'>🧠 Deep Insights</h1>", unsafe_allow_html=True)
+    # --- PAGE 2: RAW ANALYTICS ---
+    elif page == "🔍 Raw Analytics":
+        st.markdown("<h1 class='gradient-text'>🔍 Insight Engine</h1>", unsafe_allow_html=True)
+        st.subheader("Interactive Data Explorer")
         st.dataframe(df, use_container_width=True)
-        colA, colB = st.columns(2)
-        with colA: st.write("📊 Statistics", df.describe())
-        with colB: st.write("🛠️ Data Types", pd.DataFrame(df.dtypes, columns=["Type"]).astype(str))
-
-    # --- PAGE 3: DS HUB ---
-    elif page == "🧠 DS Mastermind":
-        st.markdown("<h1 class='gradient-text'>🧠 Mastermind Hub</h1>", unsafe_allow_html=True)
-        t1, t2 = st.tabs(["✨ AI Predictions", "🛠️ Data Surgeon"])
         
-        with t1:
-            if len(num_cols) >= 2:
-                X_p, y_p = st.selectbox("X", num_cols), st.selectbox("y", num_cols)
-                val = st.number_input("Input Value")
-                if st.button("Forecast"):
-                    model = LinearRegression().fit(df[[X_p]].values, df[y_p].values)
-                    res = model.predict([[val]])
-                    st.metric("Prediction", f"{res[0]:.2f}")
-            else: st.error("Need numeric data for AI!")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("#### 📊 Descriptive Stats")
+            st.write(df.describe())
+        with c2:
+            st.markdown("#### 🛠️ Structural Info")
+            st.table(pd.DataFrame(df.dtypes, columns=["Type"]).astype(str))
 
-        with t2:
-            op = st.selectbox("Action", ["Replace Value", "Remove Column"])
-            if op == "Replace Value":
-                c_r = st.selectbox("Column", all_cols)
-                idx_r = st.number_input("Index", 0, len(df)-1)
-                v_new = st.text_input("New Value")
-                if st.button("Update"):
-                    # Dynamic casting for new Pandas versions
-                    current_val = df.at[idx_r, c_r]
-                    df.at[idx_r, c_r] = type(current_val)(v_new) if not pd.isna(current_val) else v_new
-                    st.session_state.df = df
-                    st.success("Updated!")
-                    st.rerun()
+    # --- PAGE 3: ML HUB ---
+    elif page == "🧠 ML Hub":
+        st.markdown("<h1 class='gradient-text'>🧠 Machine Learning Hub</h1>", unsafe_allow_html=True)
+        t_ai, t_surgeon = st.tabs(["✨ AI Prediction", "🛠️ Data Surgeon"])
+        
+        with t_ai:
+            if len(num_cols) >= 2:
+                col_x, col_y = st.columns(2)
+                X_f = col_x.selectbox("Training Feature (X)", num_cols)
+                y_f = col_y.selectbox("Target Label (y)", num_cols)
+                
+                in_val = st.number_input(f"Enter {X_f} to Predict {y_f}:", value=0.0)
+                if st.button("🚀 Forecast Now"):
+                    model = LinearRegression().fit(df[[X_f]].values, df[y_f].values)
+                    pred = model.predict([[in_val]])
+                    st.metric("Predicted Output", f"{pred[0]:.4f}")
+                    st.confetti()
+            else: st.error("Add more numeric data for AI Models!")
+
+        with t_surgeon:
+            st.subheader("Live Data Modification")
+            action = st.selectbox("Choose Action", ["Update Value", "Drop Column", "Drop Row"])
+            
+            if action == "Update Value":
+                col_sel = st.selectbox("Column", all_cols)
+                idx_sel = st.number_input("Row Index", 0, len(df)-1)
+                
+                # Smart Data Type Handling for Input
+                if pd.api.types.is_numeric_dtype(df[col_sel]):
+                    new_v = st.number_input("New Value", value=float(df.at[idx_sel, col_sel]))
+                else:
+                    new_v = st.text_input("New Value", value=str(df.at[idx_sel, col_sel]))
+                
+                if st.button("Confirm Transaction"):
+                    try:
+                        # Dynamic Casting
+                        df.at[idx_sel, col_sel] = type(df[col_sel].iloc[0])(new_v)
+                        st.session_state.df = df
+                        st.success("Database Updated!")
+                        st.rerun()
+                    except: st.error("Data Type Mismatch!")
 
     # --- PAGE 4: SAMPLES ---
-    elif page == "📖 Learn & Samples":
-        st.title("Tutorials")
+    elif page == "📖 Sample Vault":
+        st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
         if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
+        else: st.info("Tutorial video coming soon to Nilay's Studio!")
 
-# --- LANDING PAGE ---
+# --- LANDING PAGE (NO DATA) ---
 else:
     st.markdown("""
-    <div style='text-align: center; padding: 80px 0;'>
-      <h1 style='font-size: 5.5em; margin-bottom: 0;' class='gradient-text'>💎 Graphico Pro</h1>
-      <p style='font-size: 1.6em; color: #a1a1a1; margin-top: 0;'>The Professional Data Studio by Nilay</p>
+    <div style='text-align: center; padding: 100px 0;'>
+      <h1 style='font-size: 6em; margin-bottom: 0;' class='gradient-text'>💎 Graphico Pro</h1>
+      <p style='font-size: 1.8em; color: #a1a1a1; margin-top: 0;'>The Ultimate Data Studio for Students & Pro's</p>
       <br><br>
       <div style='display: flex; justify-content: center; gap: 30px;'>
-        <div class='card-box' style='width: 320px;'><h3>📊 Visualize</h3><p>Messy data to beautiful charts.</p></div>
-        <div class='card-box' style='width: 320px;'><h3>🧠 Predict</h3><p>Built-in AI forecasting.</p></div>
-        <div class='card-box' style='width: 320px;'><h3>🛠️ Clean</h3><p>Smart auto-handling of data.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>⚡ Fast</h3><p>Instant visualization for CSV/Excel files.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>🧠 Smart</h3><p>Predict trends using Machine Learning logic.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>🛠️ Reliable</h3><p>Built-in data cleaning & surgery tools.</p></div>
       </div>
-      <br><br>
-      <h4 style='color: #4facfe;'>👈 Upload a dataset in the sidebar to start!</h4>
+      <br><br><br>
+      <div style='background: rgba(79, 172, 254, 0.1); padding: 25px; border-radius: 50px; display: inline-block; border: 2px dashed #4facfe;'>
+        <h4 style='margin:0; color: #4facfe;'>👈 Drag & Drop your Dataset in the Sidebar to Launch Engine</h4>
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
-# Sitemap
+# Sitemap Metadata
 if st.query_params.get("sitemap") == "true":
-    st.text("Sitemap Active")
+    st.text("Graphico Pro 2026 Engine: Status Active")
     st.stop()
