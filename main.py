@@ -124,76 +124,18 @@ if df is not None:
   st.toast("Enjoying the tool? Don't forget to leave a review in the sidebar! ⭐", icon="🚀")
 
   if page == "🏠 Home & Visualizer":
-    st.markdown("""
-      <h2 style='color: #4facfe;'>📊 Professional Data Visualizer</h2>
-      <hr style='margin-top: 0; margin-bottom: 20px; border: 0; height: 1px; background-image: linear-gradient(to right, #4facfe, #00f2fe, transparent);'>
-      """, unsafe_allow_html=True)
-    
-    m1, m2, m3 = st.columns(3)
-    m1.metric("📈 Rows", df.shape[0])
-    m2.metric("📋 Columns", df.shape[1])
-    m3.metric("⚠️ Missing Cells", int(df.isnull().sum().sum()))
-    st.divider()
-
-    st.sidebar.header("🎨 Graph Settings")
-    g_type = st.sidebar.selectbox("Chart Type", ["Auto Suggestion","Bar","Line","Scatter","Pie","Histogram","Box","Area","Heatmap"])
-    chart_title = st.sidebar.text_input("Chart Title", "My Analysis")
-    
-    x_ax = st.sidebar.selectbox("X-Axis", all_cols)
-    y_ax = st.sidebar.selectbox("Y-Axis (Numeric)", num_cols) if num_cols else None
-    
-    st.subheader("🔍 Filter Data")
-    f_col = st.selectbox("Select column to filter", all_cols)
-    u_vals = df[f_col].dropna().unique().tolist()
-    s_vals = st.multiselect("Select Values", u_vals, default=u_vals[:5] if len(u_vals)>5 else u_vals)
-    df_filtered = df[df[f_col].isin(s_vals)]
-    
-    if g_type == "Auto Suggestion":
-      g_type = "Scatter" if len(num_cols) >= 2 else "Bar"
-      st.info(f"✨ Suggested: {g_type} Chart")
-    
-    fig = None
-    try:
-      if g_type == "Heatmap":
-        corr = df_filtered.corr(numeric_only=True)
-        if not corr.empty:
-          fig = px.imshow(corr, text_auto=True, title="Correlation Heatmap")
-      elif y_ax:
-        if g_type == "Bar": fig = px.bar(df_filtered, x=x_ax, y=y_ax, title=chart_title)
-        elif g_type == "Line": fig = px.line(df_filtered, x=x_ax, y=y_ax, title=chart_title)
-        elif g_type == "Scatter": fig = px.scatter(df_filtered, x=x_ax, y=y_ax, title=chart_title)
-        elif g_type == "Pie": fig = px.pie(df_filtered, names=x_ax, values=y_ax, title=chart_title)
-        elif g_type == "Histogram": fig = px.histogram(df_filtered, x=y_ax, title=chart_title)
-        elif g_type == "Box": fig = px.box(df_filtered, x=x_ax, y=y_ax, title=chart_title)
-        elif g_type == "Area": fig = px.area(df_filtered, x=x_ax, y=y_ax, title=chart_title)
-      
-      if fig:
-        st.plotly_chart(fig, use_container_width=True)
-    except Exception as e:
-      st.error(f"Visualization Error: {e}")
-    
-    csv = df_filtered.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Download Filtered Data (CSV)", csv, "graphico_report.csv", "text/csv")
+    pass
 
   elif page == "🔍 Raw Insights":
-    st.markdown("<h2 style='color: #00f2fe;'>🧠 Technical Data Insights</h2>", unsafe_allow_html=True)
-    st.subheader("Data Preview")
-    st.dataframe(df, use_container_width=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-      st.subheader("📊 Descriptive Statistics")
-      st.write(df.describe())
-    with col2:
-      st.subheader("🛠️ Column Metadata")
-      st.dataframe(pd.DataFrame(df.dtypes, columns=["Type"]).astype(str))
-    st.divider()
-    st.subheader("❌ Missing Values Check")
-    st.write(df.isnull().sum())
+    pass
 
   elif page == "DS Hub":
     st.title("Welcome to DS Mastermind's Hub 🧠💡")
     df = pd.DataFrame(df)
+
+    # ✅ session state init (SAFE ADD)
+    if "df" not in st.session_state:
+      st.session_state["df"] = df
 
     option_2 = st.selectbox(
       "Encode categorical variables with",
@@ -235,6 +177,7 @@ if df is not None:
       key="work_options"
     )
 
+    # ✅ FIXED EDIT SECTION
     if work_options == "Edit DataFrame":
       edit_option = st.selectbox(
         "Choose the work to do with DataFrame",
@@ -242,37 +185,55 @@ if df is not None:
         key="edit_options"
       )
 
-      if edit_option == "Replace a value":
-        df = st.session_state.get("df", df)
-        column_to_replace = st.selectbox("Select a column to replace values", df.columns, key="replacement_column")
-        index_number = st.number_input("Enter the index number of the value to replace", key="replacement_index")
-        new_value = st.text_input("Enter the new value", key="replacement_new_value")
+      df = st.session_state.get("df", df)
 
-        if st.button("Replace Value", key="replace_button"):
-          df.at[index_number, column_to_replace] = new_value
-          st.success("Value replaced successfully!")
-          st.write(df)
-          st.session_state["df"] = df 
+      if edit_option == "Replace a value":
+        column_to_replace = st.selectbox("Select a column", df.columns)
+        index_number = st.number_input("Enter index", min_value=0, step=1)
+        new_value = st.text_input("Enter new value")
+
+        if st.button("Replace Value"):
+          try:
+            index_number = int(index_number)
+            if pd.api.types.is_numeric_dtype(df[column_to_replace]):
+              new_value = float(new_value)
+
+            df.at[index_number, column_to_replace] = new_value
+            st.success("✅ Value replaced successfully!")
+            st.session_state["df"] = df
+            st.write(df)
+
+          except Exception as e:
+            st.error(f"Error: {e}")
 
       elif edit_option == "Remove a row":
-        df = st.session_state.get("df", df)
-        index_to_remove = st.number_input("Enter the index number of the row to remove", key="row_removal_index")
+        index_to_remove = st.number_input("Enter index", min_value=0, step=1)
 
-        if st.button("Remove Row", key="remove_row_button"):
-          df.drop(index=index_to_remove, inplace=True)
-          st.success("Row removed successfully!")
-          st.write(df)
-          st.session_state["df"] = df
+        if st.button("Remove Row"):
+          try:
+            df.drop(index=int(index_to_remove), inplace=True)
+            df.reset_index(drop=True, inplace=True)
+
+            st.success("✅ Row removed successfully!")
+            st.session_state["df"] = df
+            st.write(df)
+
+          except Exception as e:
+            st.error(f"Error: {e}")
 
       elif edit_option == "Remove a column":
-        df = st.session_state.get("df", df)
-        column_to_remove = st.selectbox("Select a column to remove", df.columns, key="column_removal")
+        column_to_remove = st.selectbox("Select column", df.columns)
 
-        if st.button("Remove Column", key="remove_column_button"):
-          df.drop(columns=[column_to_remove], inplace=True)
-          st.success("Column removed successfully!")
-          st.write(df)
-          st.session_state["df"] = df
+        if st.button("Remove Column"):
+          try:
+            df.drop(columns=[column_to_remove], inplace=True)
+
+            st.success("✅ Column removed successfully!")
+            st.session_state["df"] = df
+            st.write(df)
+
+          except Exception as e:
+            st.error(f"Error: {e}")
 
     else:
       try:
@@ -315,40 +276,3 @@ if df is not None:
 
       except ValueError:
         st.error("Can't provide predictions on non-numeric data. Please select numeric columns for training and predicting.")
-
-  elif page == "📖 Samples":
-    st.title("Check before Using")
-    st.video("Tutorial.mp4")
-    st.subheader("Taste it Nicely! ")
-    files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
-    for i in range(0, len(files), 4):
-      cols = st.columns(4)
-      for j, col in enumerate(cols):
-        if i+j < len(files):
-          col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
-
-else:
-  st.markdown("""
-    <div style='text-align: center; padding: 50px;'>
-      <h1 style='font-size: 3.5em; color: #4facfe;'>💎 Graphico Pro</h1>
-      <p style='font-size: 1.2em; color: #a1a1a1;'>Your Smartest Data Companion</p>
-      <br>
-      <div style='background-color: #1e2130; padding: 20px; border-radius: 15px; border: 1px solid #4facfe;'>
-        <p>👈 <b>Start by uploading your dataset in the sidebar.</b></p>
-      </div>
-      <br>
-      <p style='color: #4facfe;'>Enjoying the tool? Leave a ⭐ in the sidebar to help me build faster!</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-if st.query_params.get("sitemap") == "true":
-  sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://graphico.streamlit.app</loc>
-    <lastmod>2026-03-31</lastmod>
-    <priority>1.0</priority>
-  </url>
-</urlset>"""
-  st.text(sitemap_xml)
-  st.stop()
