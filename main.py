@@ -226,7 +226,7 @@ if 'df' in st.session_state:
                         st.session_state.df = df
                         st.success("Database Updated!")
                         st.rerun()
-                    except: st.info"No worry about")
+                    except: st.info("No worry about")
 
     # --- PAGE 4: SAMPLES ---
     elif page == "📖 Sample Vault":
