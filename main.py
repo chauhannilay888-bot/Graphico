@@ -12,7 +12,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
-# --------- 1. HIGH-END UI CUSTOMIZATION -----------
+# --------- 1. PREMIUM UI & MASTERMIND CSS -----------
 ga_code = """
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHN9KEP6KN"></script>
 <script>
@@ -25,18 +25,16 @@ ga_code = """
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
   html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
   
-  /* Metric Cards Styling */
   .stMetric {
     background: rgba(30, 33, 48, 0.7);
     padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-top: 4px solid #4facfe;
   }
   
-  /* Modern Gradient Text */
   .gradient-text {
     background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
     -webkit-background-clip: text;
@@ -45,7 +43,6 @@ ga_code = """
     letter-spacing: -1px;
   }
 
-  /* Glassmorphism Cards */
   .card-box {
     background: #1e2130;
     padding: 25px;
@@ -64,7 +61,7 @@ components.html(ga_code, height=0)
 
 # ---------------- 2. PAGE CONFIG ----------------
 st.set_page_config(
-  page_title="Graphico Pro 🚀 | Nilay's AI Studio",
+  page_title="Graphico Pro 🚀 | Nilay's Masterpiece",
   page_icon="💎",
   layout="wide",
   initial_sidebar_state="expanded"
@@ -78,11 +75,9 @@ def smart_clean_df(df):
     for col in df_clean.columns:
         if df_clean[col].isnull().any():
             if pd.api.types.is_numeric_dtype(df_clean[col]):
-                # Fill numeric with mean, fallback to 0 if all NaN
                 mean_val = df_clean[col].mean()
                 df_clean[col] = df_clean[col].fillna(mean_val if pd.notnull(mean_val) else 0)
             else:
-                # Fill categorical with mode, fallback to "Unknown"
                 mode_vals = df_clean[col].mode()
                 df_clean[col] = df_clean[col].fillna(mode_vals[0] if not mode_vals.empty else "Unknown")
     return df_clean
@@ -98,7 +93,6 @@ with st.sidebar:
     u_file = st.file_uploader("Upload CSV, Excel or JSON", type=["csv", "xlsx", "xls", "json"])
     
     if u_file:
-        # Check for new file to reset session
         if "file_id" not in st.session_state or st.session_state.file_id != u_file.name:
             ext = u_file.name.split(".")[-1].lower()
             try:
@@ -121,10 +115,19 @@ with st.sidebar:
         with st.expander("📝 Feedback Loop", expanded=True):
             r = st.slider("Rating", 1, 5, 5)
             m = st.text_input("Message")
-            if st.button("Submit to Nilay"):
-                st.balloons()
-                st.success("Review Logged!")
-                st.session_state.review_active = False
+            if st.button("Submit Review"):
+                try:
+                    conn = st.connection("gsheets", type=GSheetsConnection)
+                    existing = conn.read(worksheet="Sheet1", ttl=0)
+                    new_row = pd.DataFrame([{"rating": int(r), "review": m.strip()}])
+                    updated = pd.concat([existing, new_row], ignore_index=True).dropna(how='all')
+                    conn.update(worksheet="Sheet1", data=updated)
+                    st.success("Review Logged! 🚀")
+                    st.balloons()
+                    st.session_state.review_active = False
+                except: st.error("Link Error!")
+    
+    st.caption("Crafted with ❤️ by Nilay")
 
 # ---------------- 5. MAIN APPLICATION LOGIC ----------------
 if 'df' in st.session_state:
@@ -142,7 +145,6 @@ if 'df' in st.session_state:
         m3.metric("🧹 Cells Cleaned", int(df.isnull().sum().sum()))
         st.divider()
 
-        # Dynamic Visualizer
         v_col, s_col = st.columns([3, 1])
         with s_col:
             st.markdown("### 🎨 Styling")
@@ -186,10 +188,10 @@ if 'df' in st.session_state:
             st.markdown("#### 🛠️ Structural Info")
             st.table(pd.DataFrame(df.dtypes, columns=["Type"]).astype(str))
 
-    # --- PAGE 3: ML HUB ---
+    # --- PAGE 3: ML HUB (FIXED SURGERY) ---
     elif page == "🧠 ML Hub":
-        st.markdown("<h1 class='gradient-text'>🧠 Machine Learning Hub</h1>", unsafe_allow_html=True)
-        t_ai, t_surgeon = st.tabs(["✨ AI Prediction", "🛠️ Data Surgeon"])
+        st.markdown("<h1 class='gradient-text'>🧠 ML & Data Surgeon Hub</h1>", unsafe_allow_html=True)
+        t_ai, t_surgeon = st.tabs(["✨ AI Predictions", "🛠️ Data Surgeon"])
         
         with t_ai:
             if len(num_cols) >= 2:
@@ -197,63 +199,88 @@ if 'df' in st.session_state:
                 X_f = col_x.selectbox("Training Feature (X)", num_cols)
                 y_f = col_y.selectbox("Target Label (y)", num_cols)
                 
-                in_val = st.number_input(f"Enter {X_f} to Predict {y_f}:", value=0.0)
+                in_val = st.number_input(f"Enter {X_f} Value:", value=0.0)
                 if st.button("🚀 Forecast Now"):
                     model = LinearRegression().fit(df[[X_f]].values, df[y_f].values)
                     pred = model.predict([[in_val]])
-                    st.metric("Predicted Output", f"{pred[0]:.4f}")
+                    st.metric(f"Predicted {y_f}", f"{pred[0]:.4f}")
                     st.confetti()
             else: st.error("Add more numeric data for AI Models!")
 
         with t_surgeon:
-            st.subheader("Live Data Modification")
-            action = st.selectbox("Choose Action", ["Update Value", "Drop Column", "Drop Row"])
+            st.subheader("Live Database Modification")
+            action = st.selectbox("Select Surgery Type", ["Update Value", "Drop Column", "Drop Row"])
             
             if action == "Update Value":
-                col_sel = st.selectbox("Column", all_cols)
+                col_sel = st.selectbox("Select Column", all_cols)
                 idx_sel = st.number_input("Row Index", 0, len(df)-1)
                 
-                # Smart Data Type Handling for Input
                 if pd.api.types.is_numeric_dtype(df[col_sel]):
-                    new_v = st.number_input("New Value", value=float(df.at[idx_sel, col_sel]))
+                    new_v = st.number_input("New Numeric Value", value=float(df.at[idx_sel, col_sel]))
                 else:
-                    new_v = st.text_input("New Value", value=str(df.at[idx_sel, col_sel]))
+                    new_v = st.text_input("New Text Value", value=str(df.at[idx_sel, col_sel]))
                 
-                if st.button("Confirm Transaction"):
+                if st.button("Apply Transformation"):
                     try:
-                        # Dynamic Casting
+                        # Dynamic Casting and Assignment
                         df.at[idx_sel, col_sel] = type(df[col_sel].iloc[0])(new_v)
                         st.session_state.df = df
-                        st.success("Database Updated!")
+                        st.success("Synchronized!")
                         st.rerun()
-                    except: st.info("No worry about")
+                    except: st.error("Type Mismatch Error!")
+
+            elif action == "Drop Column":
+                target_col = st.selectbox("Select Column to Remove", all_cols)
+                st.warning(f"Permanently delete '{target_col}'?")
+                if st.button("🔥 Confirm Deletion"):
+                    updated_df = df.drop(columns=[target_col])
+                    st.session_state.df = updated_df
+                    st.toast(f"Column '{target_col}' removed!", icon="🗑️")
+                    st.rerun()
+
+            elif action == "Drop Row":
+                target_row = st.number_input("Enter Index to Remove", 0, len(df)-1)
+                st.warning(f"Permanently delete Row Index {target_row}?")
+                if st.button("🗑️ Confirm Removal"):
+                    updated_df = df.drop(index=target_row).reset_index(drop=True)
+                    st.session_state.df = updated_df
+                    st.toast(f"Row {target_row} deleted!", icon="✂️")
+                    st.rerun()
 
     # --- PAGE 4: SAMPLES ---
     elif page == "📖 Sample Vault":
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
         if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
-        else: st.info("Tutorial video coming soon to Nilay's Studio!")
+        
+        st.subheader("Visual Sample Gallery")
+        if os.path.exists("tutorial_PNGs"):
+            f_list = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
+            for i in range(0, len(f_list), 4):
+                cols = st.columns(4)
+                for j, c in enumerate(cols):
+                    if i+j < len(f_list):
+                        c.image(Image.open(os.path.join("tutorial_PNGs", f_list[i+j])), use_container_width=True)
 
-# --- LANDING PAGE (NO DATA) ---
+# --- LANDING PAGE ---
 else:
     st.markdown("""
     <div style='text-align: center; padding: 100px 0;'>
       <h1 style='font-size: 6em; margin-bottom: 0;' class='gradient-text'>💎 Graphico Pro</h1>
-      <p style='font-size: 1.8em; color: #a1a1a1; margin-top: 0;'>The Ultimate Data Studio for Students & Pro's</p>
+      <p style='font-size: 1.8em; color: #a1a1a1; margin-top: 0;'>The Professional Data Studio by Nilay</p>
       <br><br>
       <div style='display: flex; justify-content: center; gap: 30px;'>
-        <div class='card-box' style='width: 300px;'><h3>⚡ Fast</h3><p>Instant visualization for CSV/Excel files.</p></div>
-        <div class='card-box' style='width: 300px;'><h3>🧠 Smart</h3><p>Predict trends using Machine Learning logic.</p></div>
-        <div class='card-box' style='width: 300px;'><h3>🛠️ Reliable</h3><p>Built-in data cleaning & surgery tools.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>⚡ Fast</h3><p>Instant visualization for complex data.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>🧠 Smart</h3><p>Predict trends using ML logic.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>🛠️ Reliable</h3><p>Pro data cleaning & surgery tools.</p></div>
       </div>
       <br><br><br>
       <div style='background: rgba(79, 172, 254, 0.1); padding: 25px; border-radius: 50px; display: inline-block; border: 2px dashed #4facfe;'>
-        <h4 style='margin:0; color: #4facfe;'>👈 Drag & Drop your Dataset in the Sidebar to Launch Engine</h4>
+        <h4 style='margin:0; color: #4facfe;'>👈 Drag & Drop your Dataset in the Sidebar to Launch</h4>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-# Sitemap Metadata
+# Sitemap Check
 if st.query_params.get("sitemap") == "true":
-    st.text("Graphico Pro 2026 Engine: Status Active")
+    st.text("Engine Status: 100% Operational")
     st.stop()
