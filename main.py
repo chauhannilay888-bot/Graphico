@@ -232,12 +232,21 @@ if 'df' in st.session_state:
     elif page == "📖 Sample Vault":
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
         if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
-        else: st.info("Tutorial video coming soon!")
-          
+        import streamlit as st, os
+        files=[f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
+        for i in range(0,len(files),4):
+          cols=st.columns(4)
+          for j,c in enumerate(cols):
+            if i+j<len(files): c.image(Image.open(os.path.join("tutorial_PNGs",files[i+j])),use_column_width=True)
+     
 elif page == "📖 Sample Vault":
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
         if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
-        else: st.info("Tutorial video coming soon!")
+        files=[f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
+        for i in range(0,len(files),4):
+          cols=st.columns(4)
+          for j,c in enumerate(cols):
+            if i+j<len(files): c.image(Image.open(os.path.join("tutorial_PNGs",files[i+j])),use_column_width=True)
 
 else:
     st.markdown("""
