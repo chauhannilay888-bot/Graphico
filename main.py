@@ -233,6 +233,11 @@ if 'df' in st.session_state:
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
         if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
         else: st.info("Tutorial video coming soon!")
+          
+elif page == "📖 Sample Vault":
+        st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
+        if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
+        else: st.info("Tutorial video coming soon!")
 
 else:
     st.markdown("""
