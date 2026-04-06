@@ -65,7 +65,7 @@ with st.sidebar:
     st.divider()
 
     page = st.radio("✨ Navigation", 
-                    ["🏠 Home & Visualizer", "🔍 Raw Insights", "DS Hub", "📖 Samples"], 
+                    ["🏠 Home & Visualizer", "🔍 Raw Insights", "🤯 DS Hub", "📖 Samples"], 
                     index=0)
 
     uploaded_file = st.file_uploader("Upload Dataset (CSV, Excel, JSON)", 
@@ -198,7 +198,7 @@ if df is not None:
         st.subheader("❌ Missing Values Check")
         st.write(df.isnull().sum())
 
-    elif page == "DS Hub":
+    elif page == "🤯 Ds Hub":
         st.title("Welcome to DS Mastermind's Hub 🧠💡")
         df = pd.DataFrame(df)
         
@@ -274,7 +274,7 @@ if df is not None:
                     st.success("Column removed successfully!")
                     st.write(df)
 
-        elif page == "Ds Hub":  # Make Predictions
+        elif page == "🤯 Ds Hub":  # Make Predictions
             try:
                 st.subheader("New DataFrame for Predictions")
                 st.write(df)
