@@ -229,14 +229,14 @@ if 'df' in st.session_state:
                     st.toast(f"Row {target_row} deleted!")
                     st.rerun()
             
-            elif page == "📖 Sample Vault":
-              st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
-              if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
-
-
     elif page == "📖 Sample Vault":
-        st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
-        if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
+      st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
+      if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
+
+
+elif page == "📖 Sample Vault":
+    st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
+    if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
         
 else:
     st.markdown("""
