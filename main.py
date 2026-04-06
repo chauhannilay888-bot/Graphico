@@ -90,7 +90,7 @@ with st.sidebar:
 
     if st.session_state.show_review:
         with st.expander("📝 Help Nilay Improve", expanded=True):
-            st.markdown("<p style='font-size: 0.8em;'>Your feedback is a student developer's fuel! ⛽</p>", 
+            st.markdown("<p style='font-size: 0.8em;'>Your feedback as a student developer's fuel! ⛽</p>", 
                         unsafe_allow_html=True)
             
             rating = st.selectbox("Rate us", [5, 4, 3, 2, 1], key="rev_rating")
@@ -200,7 +200,112 @@ if df is not None:
 
     elif page == "DS Hub":
         st.title("Welcome to DS Mastermind's Hub 🧠💡")
-        # (Yahan tera DS Hub code hai – maine sirf indentation fix ki hai, logic same rakha hai)
+        df = pd.DataFrame(df)
+        
+        option_2 = st.selectbox(
+            "Encode categorical variables with", 
+            ("Label Encoding (for 2 categories)", "One-Hot Encoding (for more than 2 categories)"),
+            key="encoding_method"
+        )
+
+        if option_2 == "Label Encoding (for 2 categories)":
+            colm = st.selectbox("Select a column to encode", df.columns, key="column_to_encode")
+            if df[colm].dtype != 'object':
+                st.info("No need to encode this column as it is numeric.")
+            else:
+                le = LabelEncoder()
+                name = colm.lower().replace(" ", "_") + "_encoded"
+                df[name] = le.fit_transform(df[colm])
+
+        elif option_2 == "One-Hot Encoding (for more than 2 categories)":
+            colm = st.selectbox("Select a column to encode", df.columns, key="column_to_one_hot_encode")
+            if df[colm].dtype != 'object':
+                st.info("No need to encode this column as it is numeric.")
+            else:
+                df = pd.get_dummies(df, columns=[colm], prefix=colm.lower().replace(" ", "_"))
+
+        st.write(df)
+
+        # Fill missing values
+        def fill_missing_values(df):
+            for column in df.columns:
+                if df[column].dtype == 'object':
+                    df[column] = df[column].fillna(df[column].mode()[0])
+                else:
+                    df[column] = df[column].fillna(df[column].mean())
+            return df
+
+        fill_missing_values(df)
+        st.info("✨ No need to worry about missing values, mastermind buddy has taken care of it for you!")
+
+        work_options = st.radio(
+            "What would you like to do?",
+            ("Make Predictions", "Edit DataFrame"),
+            key="work_options"
+        )
+
+        if work_options == "Edit DataFrame":
+            edit_option = st.selectbox(
+                "Choose the work to do with DataFrame",
+                ("Replace a value", "Remove a row", "Remove a column"),
+                key="edit_options"
+            )
+
+            if edit_option == "Replace a value":
+                column_to_replace = st.selectbox("Select a column to replace values", df.columns, key="replacement_column")
+                index_number = st.number_input("Enter the index number of the value to replace", key="replacement_index")
+                new_value = st.text_input("Enter the new value", key="replacement_new_value")
+                if st.button("Replace Value", key="replace_button"):
+                    df.at[index_number, column_to_replace] = new_value
+                    st.success("Value replaced successfully!")
+                    st.write(df)
+
+            elif edit_option == "Remove a row":
+                index_to_remove = st.number_input("Enter the index number of the row to remove", key="row_removal_index")
+                if st.button("Remove Row", key="remove_row_button"):
+                    df.drop(index=index_to_remove, inplace=True)
+                    st.success("Row removed successfully!")
+                    st.write(df)
+
+            elif edit_option == "Remove a column":
+                column_to_remove = st.selectbox("Select a column to remove", df.columns, key="column_removal")
+                if st.button("Remove Column", key="remove_column_button"):
+                    df.drop(columns=[column_to_remove], inplace=True)
+                    st.success("Column removed successfully!")
+                    st.write(df)
+
+        else:  # Make Predictions
+            try:
+                st.subheader("New DataFrame for Predictions")
+                st.write(df)
+                X = st.selectbox("Training on column", df.columns, key="training_column")
+                y = st.selectbox("Predicting column", df.columns, key="predicting_column")
+
+                models = st.radio(
+                    "Select a model for predictions:",
+                    ("Model 1", "Model 2"),
+                    key="model_selection"
+                )
+
+                if models == "Model 1":
+                    model = LinearRegression()
+                    model.fit(df[[X]].values, df[y].values)
+                    popu = st.number_input("Enter a value to predict", key="input_value")
+                    predictions = model.predict([[popu]])
+                    st.subheader("Our obedient child is predicting...")
+                    st.subheader(f"Predicted value: {predictions[0]:.0f}")
+
+                elif models == "Model 2":
+                    degree = st.slider("Select polynomial degree", 2, 5, 2, key="poly_degree")
+                    model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
+                    model.fit(df[[X]].values, df[y].values)
+                    popu = st.number_input("Enter a value to predict", key="input_value_5")
+                    predictions = model.predict([[popu]])
+                    st.subheader("Smart with foresight, let's see the predictions...")
+                    st.subheader(f"Predicted value: {predictions[0]:.0f}")
+
+            except ValueError:
+                st.error("Can't provide predictions on non-numeric data. Please select numeric columns for training and predicting.")
 
     elif page == "📖 Samples":
         st.title("Check before Using")
