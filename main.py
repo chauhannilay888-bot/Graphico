@@ -274,7 +274,7 @@ if df is not None:
                     st.success("Column removed successfully!")
                     st.write(df)
 
-        else:  # Make Predictions
+        elif page == "Ds Hub":  # Make Predictions
             try:
                 st.subheader("New DataFrame for Predictions")
                 st.write(df)
@@ -306,32 +306,44 @@ if df is not None:
 
             except ValueError:
                 st.error("Can't provide predictions on non-numeric data. Please select numeric columns for training and predicting.")
-
-    elif page == "📖 Samples":
-        st.title("Check before Using")
-        st.video("Tutorial.mp4")
-        st.subheader("Taste it Nicely! ")
-        files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
-        for i in range(0, len(files), 4):
+        else:
+          st.title("Check before Using")
+          st.video("Tutorial.mp4")
+          st.subheader("Taste it Nicely! ")
+          files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
+          for i in range(0, len(files), 4):
             cols = st.columns(4)
             for j, col in enumerate(cols):
-                if i + j < len(files):
-                    col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
+              if i + j < len(files):
+                col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
 
-    else:
-        st.markdown("""
-            <div style='text-align: center; padding: 50px;'>
-              <h1 style='font-size: 3.5em; color: #4facfe;'>💎 Graphico Pro</h1>
-              <p style='font-size: 1.2em; color: #a1a1a1;'>Your Smartest Data Companion</p>
-              <br>
-              <div style='background-color: #1e2130; padding: 20px; border-radius: 15px; border: 1px solid #4facfe;'>
-                <p>👈 <b>Start by uploading your dataset in the sidebar.</b></p>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
 
-# Temporary Request
-st.info("Please submit your review with us, we have just updated our review system so that, now I can read your reviews and ratings. Thanks for letting your support with us! Please Ignore if already submited after 31/3/2026")
+elif page == "📖 Samples":
+    st.title("Check before Using")
+    st.video("Tutorial.mp4")
+    st.subheader("Taste it Nicely! ")
+    files = [f for f in os.listdir("tutorial_PNGs") if f.endswith(".png")]
+    for i in range(0, len(files), 4):
+        cols = st.columns(4)
+        for j, col in enumerate(cols):
+            if i + j < len(files):
+                col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
+
+else:
+  st.markdown("""
+  <div style='text-align: center; padding: 100px 0;'>
+    <h1 style='font-size: 6em; margin-bottom: 0;' class='gradient-text'>💎 Graphico Pro</h1>
+    <p style='font-size: 1.8em; color: #a1a1a1; margin-top: 0;'>The Professional Data Studio by Nilay</p>
+    <br><br>
+    <div style='display: flex; justify-content: center; gap: 30px;'>
+      <div class='card-box' style='width: 300px;'><h3>⚡ Fast</h3><p>Instant visualization for any file.</p></div>
+      <div class='card-box' style='width: 300px;'><h3>🧠 Smart</h3><p>Built-in AI forecasting logic.</p></div>
+      <div class='card-box' style='width: 300px;'><h3>🛠️ Reliable</h3><p>Full-scale data surgery tools.</p></div>
+    </div>
+    <br><br>
+    <h4 style='color: #4facfe;'>👈 Upload your Dataset in the Sidebar to Launch Engine</h4>
+  </div>
+  """, unsafe_allow_html=True)
 
 if st.query_params.get("sitemap") == "true":
     sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
