@@ -126,7 +126,6 @@ with st.sidebar:
 
 # ---------------- 5. MAIN LOGIC ----------------
 if df is not None:
-    # File uploaded hai → normal pages chalenge
     all_cols = df.columns.tolist()
     num_cols = df.select_dtypes(include="number").columns.tolist()
 
@@ -200,7 +199,6 @@ if df is not None:
         st.write(df.isnull().sum())
 
     elif page == "DS Hub":
-        # Tera original DS Hub code bilkul same rakha hai
         st.title("Welcome to DS Mastermind's Hub 🧠💡")
         df = pd.DataFrame(df)
         
@@ -251,10 +249,62 @@ if df is not None:
                 ("Replace a value", "Remove a row", "Remove a column"),
                 key="edit_options"
             )
-            # ... tera pura edit logic same rakha hai
+
+            if edit_option == "Replace a value":
+                column_to_replace = st.selectbox("Select a column to replace values", df.columns, key="replacement_column")
+                index_number = st.number_input("Enter the index number of the value to replace", key="replacement_index")
+                new_value = st.text_input("Enter the new value", key="replacement_new_value")
+                if st.button("Replace Value", key="replace_button"):
+                    df.at[index_number, column_to_replace] = new_value
+                    st.success("Value replaced successfully!")
+                    st.write(df)
+
+            elif edit_option == "Remove a row":
+                index_to_remove = st.number_input("Enter the index number of the row to remove", key="row_removal_index")
+                if st.button("Remove Row", key="remove_row_button"):
+                    df.drop(index=index_to_remove, inplace=True)
+                    st.success("Row removed successfully!")
+                    st.write(df)
+
+            elif edit_option == "Remove a column":
+                column_to_remove = st.selectbox("Select a column to remove", df.columns, key="column_removal")
+                if st.button("Remove Column", key="remove_column_button"):
+                    df.drop(columns=[column_to_remove], inplace=True)
+                    st.success("Column removed successfully!")
+                    st.write(df)
 
         else:
-            # tera predictions logic same rakha hai
+            try:
+                st.subheader("New DataFrame for Predictions")
+                st.write(df)
+                X = st.selectbox("Training on column", df.columns, key="training_column")
+                y = st.selectbox("Predicting column", df.columns, key="predicting_column")
+
+                models = st.radio(
+                    "Select a model for predictions:",
+                    ("Model 1", "Model 2"),
+                    key="model_selection"
+                )
+
+                if models == "Model 1":
+                    model = LinearRegression()
+                    model.fit(df[[X]].values, df[y].values)
+                    popu = st.number_input("Enter a value to predict", key="input_value")
+                    predictions = model.predict([[popu]])
+                    st.subheader("Our obedient child is predicting...")
+                    st.subheader(f"Predicted value: {predictions[0]:.0f}")
+
+                elif models == "Model 2":
+                    degree = st.slider("Select polynomial degree", 2, 5, 2, key="poly_degree")
+                    model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
+                    model.fit(df[[X]].values, df[y].values)
+                    popu = st.number_input("Enter a value to predict", key="input_value_5")
+                    predictions = model.predict([[popu]])
+                    st.subheader("Smart with foresight, let's see the predictions...")
+                    st.subheader(f"Predicted value: {predictions[0]:.0f}")
+
+            except ValueError:
+                st.error("Can't provide predictions on non-numeric data. Please select numeric columns for training and predicting.")
 
     elif page == "📖 Samples":
         st.title("Check before Using")
@@ -268,7 +318,7 @@ if df is not None:
                     col.image(Image.open(os.path.join("tutorial_PNGs", files[i+j])), use_container_width=True)
 
 else:
-    # No file uploaded + not on Samples page → Big Diamond Dashboard
+    # No file uploaded + not on Samples → Big Diamond Dashboard
     st.markdown("""
     <div style='text-align: center; padding: 100px 0;'>
       <h1 style='font-size: 6em; margin-bottom: 0;' class='gradient-text'>💎 Graphico Pro</h1>
