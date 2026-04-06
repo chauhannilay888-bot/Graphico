@@ -228,12 +228,16 @@ if 'df' in st.session_state:
                     st.session_state.df = df.drop(index=target_row).reset_index(drop=True)
                     st.toast(f"Row {target_row} deleted!")
                     st.rerun()
+            
+            elif page == "📖 Sample Vault":
+              st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
+              if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
+
 
     elif page == "📖 Sample Vault":
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
         if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
-        else: st.info("Tutorial video coming soon!")
-
+        
 else:
     st.markdown("""
     <div style='text-align: center; padding: 100px 0;'>
