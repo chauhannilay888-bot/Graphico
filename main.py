@@ -8,6 +8,10 @@ from PIL import Image
 import json
 import time
 from streamlit_gsheets import GSheetsConnection
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
 
 # --------- 1. GOOGLE ANALYTICS & CUSTOM CSS -----------
 ga_code = """
