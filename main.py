@@ -177,58 +177,126 @@ if 'df' in st.session_state:
         st.write("#### 📊 Descriptive Stats", df.describe())
 
     elif page == "🧠 ML Hub":
-        st.markdown("<h1 class='gradient-text'>🧠 ML & Data Surgeon Hub</h1>", unsafe_allow_html=True)
-        t_ai, t_surgeon = st.tabs(["✨ AI Predictions", "🛠️ Data Surgeon"])
-        
-        with t_ai:
-            if len(num_cols) >= 2:
-                c_x, c_y = st.columns(2)
-                X_f = c_x.selectbox("Feature (X)", num_cols)
-                y_f = c_y.selectbox("Target (y)", num_cols)
-                in_val = st.number_input(f"Enter {X_f}:", value=0.0)
-                if st.button("🚀 Forecast Now"):
-                    model = LinearRegression().fit(df[[X_f]].values, df[y_f].values)
-                    pred = model.predict([[in_val]])
-                    st.metric(f"Predicted {y_f}", f"{pred[0]:.4f}")
-                    st.balloons()
-            else: st.error("Need more numeric data for AI!")
-
-        with t_surgeon:
-            st.subheader("Live Database Modification")
-            action = st.selectbox("Select Surgery Type", ["Update Value", "Drop Column", "Drop Row"])
-            
-            if action == "Update Value":
-                col_s = st.selectbox("Column", all_cols)
-                idx_s = st.number_input("Index", 0, len(df)-1)
-                curr_val = df.at[idx_s, col_s]
-                
-                if pd.api.types.is_numeric_dtype(df[col_s]):
-                    new_v = st.number_input("New Value", value=float(curr_val))
+        # Mastermind behind missing value handling
+        df = pd.read_excel('output.xlsx', engine='openpyxl')
+        df = df.copy()  # Create a copy of the DataFrame to avoid modifying the original
+        def fill_missing_values(df):
+            for column in df.columns:
+                if df[column].dtype == 'object':
+                    df[column].fillna(df[column].mode()[0], inplace=True)
                 else:
-                    new_v = st.text_input("New Value", value=str(curr_val))
+                    df[column].fillna(df[column].mean(), inplace=True)
+            return df
+        df = round(fill_missing_values(df))
+        
+        # Encoding Part
+        st.info("Missing values has been handeled by Mr Mastermind")
+        le = LabelEncoder()
+        encoding_type = st.selectbox("Select the type of Encoding", ("Label Encoding", "One-Hot Encoding"))
+        t_colm = st.selectbox("Select the column to encode", df.columns)
+        if encoding_type == "Label Encoding":
+            encd_colm_name = str(t_colm) + "_encoded"
+            df[encd_colm_name] = le.fit_transform(df[t_colm])
+            st.write(df)
+        elif encoding_type == "One-Hot Encoding":
+            df = pd.get_dummies(df, columns=[t_colm])
+            st.write(df)
+        
+        # ==================== DS HUB - EDIT DATAFRAME + PREDICTIONS ====================
+        
+        work_option = st.radio("Select the option to work on", 
+                               ("Edit DataFrame", "Make Predictions"))
+        
+        if work_option == "Edit DataFrame":
+            df = st.session_state.get('df', df)   
+        
+            op = st.selectbox("Select the editing option", 
+                              ("Remove Column", "Remove Row", "Replace or Add Value"))
+        
+            if op == "Remove Column":
+                col_to_remove = st.selectbox("Select the column to remove", df.columns)
+                if st.button("Remove Column"):
+                    df.drop(columns=[col_to_remove], inplace=True)
+                    st.success(f"Column '{col_to_remove}' has been removed.")
+                    st.session_state['df'] = df   
+                    st.rerun()                    
+        
+            elif op == "Remove Row":
+                row_to_remove = st.number_input("Enter the index of the row to remove", 
+                                                min_value=0, 
+                                                max_value=len(df)-1, 
+                                                step=1)
+                if st.button("Remove Row"):
+                    df.drop(index=row_to_remove, inplace=True)
+                    st.success(f"Row with index {row_to_remove} has been removed.")
+                    st.session_state['df'] = df
+                    st.rerun()
+        
+            elif op == "Replace or Add Value":
+                col_to_edit = st.selectbox("Select the column to edit", df.columns)
+                row_to_edit = st.number_input("Enter the index of the row to edit", 
+                                              min_value=0, 
+                                              max_value=len(df)-1, 
+                                              step=1)
+                new_value = st.text_input("Enter the new value")
                 
-                if st.button("Apply Transformation"):
+                if st.button("Update Value"):
                     try:
-                        df.at[idx_s, col_s] = type(df[col_s].iloc[0])(new_v)
-                        st.session_state.df = df
-                        st.success("Synchronized!")
+                        df.at[row_to_edit, col_to_edit] = new_value
+                        st.success(f"Value at row {row_to_edit}, column '{col_to_edit}' updated to '        {new_value}'.")
+                        st.session_state['df'] = df
                         st.rerun()
-                    except: st.error("Type Mismatch!")
-
-            elif action == "Drop Column":
-                target_col = st.selectbox("Remove Column", all_cols)
-                if st.button("🔥 Confirm Deletion"):
-                    st.session_state.df = df.drop(columns=[target_col])
-                    st.toast(f"Column '{target_col}' removed!")
-                    st.rerun()
-
-            elif action == "Drop Row":
-                target_row = st.number_input("Remove Index", 0, len(df)-1)
-                if st.button("🗑️ Confirm Removal"):
-                    st.session_state.df = df.drop(index=target_row).reset_index(drop=True)
-                    st.toast(f"Row {target_row} deleted!")
-                    st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
             
+            st.write("**Updated DataFrame:**")
+            st.dataframe(df)
+        
+        # ==================== MAKE PREDICTIONS SECTION ====================
+        elif work_option == "Make Predictions":
+            df = st.session_state.get('df', df)   # Ensure latest df from session state
+            
+            st.subheader("Model Training and Predictions")
+            
+            feature_column = st.selectbox("Select the column for training (input)", 
+                                          df.columns, 
+                                          key="feature_col")
+        
+            target_column = st.selectbox("Select the target column for prediction (output)", 
+                                         df.columns, 
+                                         key="target_col")
+            
+            if df[target_column].dtype == 'object' or df[feature_column].dtype == 'object':
+                st.error("Both target and feature columns must be numeric for model training.")
+            else:
+                models = st.radio("Select the model to train", ("Model 1", "Model 2"))
+                
+                if models == "Model 1":
+                    model = LinearRegression()
+                    model.fit(df[[feature_column]], df[[target_column]])
+                    st.success("Model 1 has been trained successfully.")
+                    
+                    to_predict = st.number_input("Enter a value to predict", step=0.01)
+                    if st.button("Predict with Model 1"):
+                        prediction = model.predict([[to_predict]])
+                        st.subheader(f"Predicted value for input {to_predict}: {prediction[0][0]:.0f}")
+                
+                else:  # Model 2 - Polynomial
+                    degree = st.slider("Select the degree for polynomial features", 
+                                       min_value=1, max_value=10, value=2)
+                    model = Pipeline([
+                        ('poly_features', PolynomialFeatures(degree=degree)),
+                        ('linear_regression', LinearRegression())
+                    ])
+                    model.fit(df[[feature_column]], df[[target_column]])
+                    st.success("Model 2 has been trained successfully.")
+                    
+                    to_predict = st.number_input("Enter a value to predict", step=0.01)
+                    if st.button("Predict with Model 2"):
+                        prediction = model.predict([[to_predict]])
+                        st.subheader(f"Predicted value for input {to_predict}: {prediction[0][0]:.0f}")
+
+
     elif page == "📖 Sample Vault":
       st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
       if os.path.exists("Tutorial.mp4"): st.video("Tutorial.mp4")
