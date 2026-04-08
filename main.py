@@ -67,8 +67,18 @@ st.set_page_config(
 )
 px.defaults.template = "plotly_dark"
 
-# ---------------- 3. ANTI-TABAHI CLEANING LOGIC ----------------
+# ---------------- 3. SESSION STATE INITIALIZATION ----------------
+if 'df' not in st.session_state:
+    st.session_state.df = None
+if 'action_count' not in st.session_state:
+    st.session_state.action_count = 0
+if 'review_active' not in st.session_state:
+    st.session_state.review_active = False
+
+# ---------------- 4. ANTI-TABAHI CLEANING LOGIC ----------------
 def smart_clean_df(df):
+    if df is None or df.empty:
+        return pd.DataFrame()
     df_clean = df.copy()
     for col in df_clean.columns:
         if df_clean[col].isnull().any():
@@ -80,7 +90,7 @@ def smart_clean_df(df):
                 df_clean[col] = df_clean[col].fillna(mode_vals[0] if not mode_vals.empty else "Unknown")
     return df_clean
 
-# ---------------- 4. SIDEBAR NAVIGATION ----------------
+# ---------------- 5. SIDEBAR NAVIGATION ----------------
 with st.sidebar:
     st.markdown("<h1 style='text-align: center; font-size: 2.2em;' class='gradient-text'>💎 GRAPHICO PRO</h1>", unsafe_allow_html=True)
     st.divider()
@@ -107,6 +117,7 @@ with st.sidebar:
                 st.session_state.df = smart_clean_df(data)
                 st.session_state.file_id = u_file.name
                 st.toast("Data Engine Synced! 🚀", icon="✅")
+                st.session_state.action_count = 0  # Reset counter on new upload
             except Exception as e:
                 st.error(f"Upload Failed: {e}")
 
@@ -134,11 +145,17 @@ with st.sidebar:
    
     st.caption("Crafted with ❤️ by Nilay")
 
-# ---------------- 5. MAIN LOGIC ----------------
-if 'df' in st.session_state:
+# ---------------- 6. MAIN LOGIC ----------------
+if st.session_state.df is not None and not st.session_state.df.empty:
     df = st.session_state.df
     all_cols = df.columns.tolist()
     num_cols = df.select_dtypes(include=np.number).columns.tolist()
+
+    # Review Reminder Logic (every 3 actions)
+    st.session_state.action_count += 1
+    if st.session_state.action_count % 3 == 0 and st.session_state.action_count > 0:
+        st.toast("💡 Loving Graphico? Please leave a quick review in the sidebar — it helps me improve!", 
+                 icon="⭐")
 
     if page == "🏠 Dashboard":
         st.markdown("<h1 class='gradient-text'>📊 Visualization Dashboard</h1>", unsafe_allow_html=True)
@@ -214,7 +231,7 @@ if 'df' in st.session_state:
             df = pd.get_dummies(df, columns=[t_colm])
             st.write(df)
 
-        # ==================== DS HUB - EDIT + PREDICTIONS ====================
+        # Edit DataFrame + Predictions (your original logic)
         work_option = st.radio("Select the option to work on",
                                ("Edit DataFrame", "Make Predictions"))
 
@@ -263,7 +280,6 @@ if 'df' in st.session_state:
             st.write("**Updated DataFrame:**")
             st.dataframe(df)
 
-        # ==================== MAKE PREDICTIONS ====================
         elif work_option == "Make Predictions":
             df = st.session_state.get('df', df)
            
@@ -292,7 +308,7 @@ if 'df' in st.session_state:
                         prediction = model.predict([[to_predict]])
                         st.subheader(f"Predicted value for input {to_predict}: {prediction[0][0]:.0f}")
                
-                else:  # Model 2 - Polynomial
+                else:
                     degree = st.slider("Select the degree for polynomial features",
                                        min_value=1, max_value=10, value=2)
                     model = make_pipeline(PolynomialFeatures(degree=degree), LinearRegression())
@@ -310,7 +326,7 @@ if 'df' in st.session_state:
             st.video("Tutorial.mp4")
 
 else:
-    # Big Diamond Dashboard (No file uploaded)
+    # Big Diamond Welcome Dashboard
     st.markdown("""
     <div style='text-align: center; padding: 100px 0;'>
       <h1 style='font-size: 6em; margin-bottom: 0;' class='gradient-text'>💎 Graphico Pro</h1>
