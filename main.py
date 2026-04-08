@@ -187,7 +187,7 @@ if 'df' in st.session_state:
                 else:
                     df[column].fillna(df[column].mean(), inplace=True)
             return df
-        df = round(fill_missing_values(df))
+        df = fill_missing_values(df)
         
         # Encoding Part
         st.info("Missing values has been handeled by Mr Mastermind")
