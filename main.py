@@ -72,7 +72,6 @@ def smart_clean_df(df):
     if df is None or df.empty:
         return df
     df_clean = df.copy()
-    # Sirf tabhi clean karo jab koi missing value ho
     if df_clean.isnull().values.any():
         for column in df_clean.columns:
             if df_clean[column].isnull().any():
@@ -82,7 +81,7 @@ def smart_clean_df(df):
                 else:
                     mode_vals = df_clean[column].mode()
                     df_clean[column] = df_clean[column].fillna(mode_vals[0] if not mode_vals.empty else "Unknown")
-        st.info("✨ Missing values handled by Mastermind!")
+        st.info("✨ Missing values handled by Mr Mastermind")
     return df_clean
 
 # ---------------- 4. SIDEBAR NAVIGATION ----------------
@@ -230,7 +229,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             df = pd.get_dummies(df, columns=[t_colm])
             st.write(df)
 
-        # Edit DataFrame + Predictions (tera original)
+        # ==================== DS HUB - EDIT + PREDICTIONS ====================
         work_option = st.radio("Select the option to work on",
                                ("Edit DataFrame", "Make Predictions"))
 
@@ -292,8 +291,10 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                                          df.columns,
                                          key="target_col")
            
-            if df[target_column].dtype == 'object' or df[feature_column].dtype == 'object':
-                st.error("Both target and feature columns must be numeric for model training.")
+            # ==================== PERFECT SAFETY FOR OBJECT COLUMNS ====================
+            if df[feature_column].dtype == 'object' or df[target_column].dtype == 'object':
+                st.error("❌ Both feature and target columns must be **numeric** for model training.")
+                st.info("Tip: Use 'Label Encoding' or 'One-Hot Encoding' in the same ML Hub to convert text columns first.")
             else:
                 models = st.radio("Select the model to train", ("Model 1", "Model 2"))
                
