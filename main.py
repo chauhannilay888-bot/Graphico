@@ -67,30 +67,25 @@ st.set_page_config(
 )
 px.defaults.template = "plotly_dark"
 
-# ---------------- 3. SESSION STATE INITIALIZATION ----------------
-if 'df' not in st.session_state:
-    st.session_state.df = None
-if 'action_count' not in st.session_state:
-    st.session_state.action_count = 0
-if 'review_active' not in st.session_state:
-    st.session_state.review_active = False
-
-# ---------------- 4. ANTI-TABAHI CLEANING LOGIC ----------------
+# ---------------- 3. ANTI-TABAHI CLEANING LOGIC (Only when needed) ----------------
 def smart_clean_df(df):
     if df is None or df.empty:
-        return pd.DataFrame()
+        return df
     df_clean = df.copy()
-    for col in df_clean.columns:
-        if df_clean[col].isnull().any():
-            if pd.api.types.is_numeric_dtype(df_clean[col]):
-                mean_val = df_clean[col].mean()
-                df_clean[col] = df_clean[col].fillna(mean_val if pd.notnull(mean_val) else 0)
-            else:
-                mode_vals = df_clean[col].mode()
-                df_clean[col] = df_clean[col].fillna(mode_vals[0] if not mode_vals.empty else "Unknown")
+    # Sirf tabhi clean karo jab koi missing value ho
+    if df_clean.isnull().values.any():
+        for column in df_clean.columns:
+            if df_clean[column].isnull().any():
+                if pd.api.types.is_numeric_dtype(df_clean[column]):
+                    mean_val = df_clean[column].mean()
+                    df_clean[column] = df_clean[column].fillna(mean_val if pd.notnull(mean_val) else 0)
+                else:
+                    mode_vals = df_clean[column].mode()
+                    df_clean[column] = df_clean[column].fillna(mode_vals[0] if not mode_vals.empty else "Unknown")
+        st.info("✨ Missing values handled by Mastermind!")
     return df_clean
 
-# ---------------- 5. SIDEBAR NAVIGATION ----------------
+# ---------------- 4. SIDEBAR NAVIGATION ----------------
 with st.sidebar:
     st.markdown("<h1 style='text-align: center; font-size: 2.2em;' class='gradient-text'>💎 GRAPHICO PRO</h1>", unsafe_allow_html=True)
     st.divider()
@@ -117,7 +112,6 @@ with st.sidebar:
                 st.session_state.df = smart_clean_df(data)
                 st.session_state.file_id = u_file.name
                 st.toast("Data Engine Synced! 🚀", icon="✅")
-                st.session_state.action_count = 0  # Reset counter on new upload
             except Exception as e:
                 st.error(f"Upload Failed: {e}")
 
@@ -145,13 +139,15 @@ with st.sidebar:
    
     st.caption("Crafted with ❤️ by Nilay")
 
-# ---------------- 6. MAIN LOGIC ----------------
-if st.session_state.df is not None and not st.session_state.df.empty:
+# ---------------- 5. MAIN LOGIC ----------------
+if 'df' in st.session_state and st.session_state.df is not None and not st.session_state.df.empty:
     df = st.session_state.df
     all_cols = df.columns.tolist()
     num_cols = df.select_dtypes(include=np.number).columns.tolist()
 
-    # Review Reminder Logic (every 3 actions)
+    # Review Reminder Logic
+    if 'action_count' not in st.session_state:
+        st.session_state.action_count = 0
     st.session_state.action_count += 1
     if st.session_state.action_count % 3 == 0 and st.session_state.action_count > 0:
         st.toast("💡 Loving Graphico? Please leave a quick review in the sidebar — it helps me improve!", 
@@ -206,16 +202,19 @@ if st.session_state.df is not None and not st.session_state.df.empty:
         
         df = df.copy()
         
-        def fill_missing_values(df):
-            for column in df.columns:
-                if df[column].dtype == 'object':
-                    df[column].fillna(df[column].mode()[0], inplace=True)
-                else:
-                    df[column].fillna(df[column].mean(), inplace=True)
-            return df
-        
-        df = fill_missing_values(df)
-        st.info("Missing values has been handled by Mr Mastermind")
+        # Missing values tabhi handle karo jab kuch missing ho
+        if df.isnull().values.any():
+            def fill_missing_values(df):
+                for column in df.columns:
+                    if df[column].isnull().any():
+                        if pd.api.types.is_numeric_dtype(df[column]):
+                            df[column].fillna(df[column].mean(), inplace=True)
+                        else:
+                            mode_vals = df[column].mode()
+                            df[column].fillna(mode_vals[0] if not mode_vals.empty else "Unknown", inplace=True)
+                return df
+            df = fill_missing_values(df)
+            st.info("✨ Missing values handled by Mr Mastermind")
 
         # Encoding Part
         le = LabelEncoder()
@@ -231,7 +230,7 @@ if st.session_state.df is not None and not st.session_state.df.empty:
             df = pd.get_dummies(df, columns=[t_colm])
             st.write(df)
 
-        # Edit DataFrame + Predictions (your original logic)
+        # Edit DataFrame + Predictions (tera original)
         work_option = st.radio("Select the option to work on",
                                ("Edit DataFrame", "Make Predictions"))
 
