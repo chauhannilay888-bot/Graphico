@@ -177,7 +177,7 @@ if 'df' in st.session_state:
         st.write("#### 📊 Descriptive Stats", df.describe())
 
     elif page == "🧠 ML Hub":
-      st.title("Welcome to DS Hub, the only agent optimised for your data!")
+        st.title("Welcome to DS Hub, the only agent optimised for your data!")
         df = df.copy()  # Create a copy of the DataFrame to avoid modifying the original
         def fill_missing_values(df):
             for column in df.columns:
