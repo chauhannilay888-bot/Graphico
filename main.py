@@ -42,18 +42,6 @@ ga_code = """
     font-weight: 800;
     letter-spacing: -1px;
   }
-  .card-box {
-    background: #1e2130;
-    padding: 25px;
-    border-radius: 20px;
-    border: 1px solid #333;
-    transition: all 0.4s ease;
-  }
-  .card-box:hover {
-    transform: translateY(-5px);
-    border-color: #4facfe;
-    box-shadow: 0 10px 20px rgba(79, 172, 254, 0.2);
-  }
 </style>
 """
 components.html(ga_code, height=0)
@@ -144,13 +132,11 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
     all_cols = df.columns.tolist()
     num_cols = df.select_dtypes(include=np.number).columns.tolist()
 
-    # Review Reminder Logic
     if 'action_count' not in st.session_state:
         st.session_state.action_count = 0
     st.session_state.action_count += 1
     if st.session_state.action_count % 3 == 0 and st.session_state.action_count > 0:
-        st.toast("💡 Loving Graphico? Please leave a quick review in the sidebar — it helps me improve!", 
-                 icon="⭐")
+        st.toast("💡 Loving Graphico? Please leave a quick review in the sidebar!", icon="⭐")
 
     if page == "🏠 Dashboard":
         st.markdown("<h1 class='gradient-text'>📊 Visualization Dashboard</h1>", unsafe_allow_html=True)
@@ -201,7 +187,6 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         
         df = df.copy()
         
-        # Missing values tabhi handle karo jab kuch missing ho
         if df.isnull().values.any():
             def fill_missing_values(df):
                 for column in df.columns:
@@ -215,7 +200,6 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             df = fill_missing_values(df)
             st.info("✨ Missing values handled by Mr Mastermind")
 
-        # Encoding Part
         le = LabelEncoder()
         encoding_type = st.selectbox("Select the type of Encoding", 
                                      ("Label Encoding", "One-Hot Encoding"))
@@ -229,7 +213,6 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             df = pd.get_dummies(df, columns=[t_colm])
             st.write(df)
 
-        # ==================== DS HUB - EDIT + PREDICTIONS ====================
         work_option = st.radio("Select the option to work on",
                                ("Edit DataFrame", "Make Predictions"))
 
@@ -284,41 +267,43 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             st.subheader("Model Training and Predictions")
            
             feature_column = st.selectbox("Select the column for training (input)",
-                                          df.columns,
-                                          key="feature_col")
+                                          df.columns, key="feature_col")
        
             target_column = st.selectbox("Select the target column for prediction (output)",
-                                         df.columns,
-                                         key="target_col")
+                                         df.columns, key="target_col")
            
-            # ==================== PERFECT SAFETY FOR OBJECT COLUMNS ====================
-            if df[feature_column].dtype == 'object' or df[target_column].dtype == 'object':
-                st.error("❌ Both feature and target columns must be **numeric** for model training.")
-                st.info("Tip: Use 'Label Encoding' or 'One-Hot Encoding' in the same ML Hub to convert text columns first.")
-            else:
-                models = st.radio("Select the model to train", ("Model 1", "Model 2"))
-               
-                if models == "Model 1":
-                    model = LinearRegression()
-                    model.fit(df[[feature_column]], df[[target_column]])
-                    st.success("Model 1 has been trained successfully.")
-                   
-                    to_predict = st.number_input("Enter a value to predict", step=0.01)
-                    if st.button("Predict with Model 1"):
-                        prediction = model.predict([[to_predict]])
-                        st.subheader(f"Predicted value for input {to_predict}: {prediction[0][0]:.0f}")
-               
+            # ==================== PERFECT TRY-EXCEPT SAFETY ====================
+            try:
+                if df[feature_column].dtype == 'object' or df[target_column].dtype == 'object':
+                    st.error("❌ Both feature and target columns must be numeric for model training.")
+                    st.info("Tip: Use Label Encoding or One-Hot Encoding first to convert text columns.")
                 else:
-                    degree = st.slider("Select the degree for polynomial features",
-                                       min_value=1, max_value=10, value=2)
-                    model = make_pipeline(PolynomialFeatures(degree=degree), LinearRegression())
-                    model.fit(df[[feature_column]], df[[target_column]])
-                    st.success("Model 2 has been trained successfully.")
+                    models = st.radio("Select the model to train", ("Model 1", "Model 2"))
                    
-                    to_predict = st.number_input("Enter a value to predict", step=0.01)
-                    if st.button("Predict with Model 2"):
-                        prediction = model.predict([[to_predict]])
-                        st.subheader(f"Predicted value for input {to_predict}: {prediction[0][0]:.0f}")
+                    if models == "Model 1":
+                        model = LinearRegression()
+                        model.fit(df[[feature_column]], df[[target_column]])
+                        st.success("Model 1 has been trained successfully.")
+                       
+                        to_predict = st.number_input("Enter a value to predict", step=0.01)
+                        if st.button("Predict with Model 1"):
+                            prediction = model.predict([[to_predict]])
+                            st.subheader(f"Predicted value for input {to_predict}: {prediction[0][0]:.0f}")
+                   
+                    else:
+                        degree = st.slider("Select the degree for polynomial features",
+                                           min_value=1, max_value=10, value=2)
+                        model = make_pipeline(PolynomialFeatures(degree=degree), LinearRegression())
+                        model.fit(df[[feature_column]], df[[target_column]])
+                        st.success("Model 2 has been trained successfully.")
+                       
+                        to_predict = st.number_input("Enter a value to predict", step=0.01)
+                        if st.button("Predict with Model 2"):
+                            prediction = model.predict([[to_predict]])
+                            st.subheader(f"Predicted value for input {to_predict}: {prediction[0][0]:.0f}")
+            except Exception as e:
+                st.error(f"Model Error: {e}")
+                st.info("Please make sure both columns are numeric.")
 
     elif page == "📖 Sample Vault":
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
@@ -326,7 +311,6 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             st.video("Tutorial.mp4")
 
 else:
-    # Big Diamond Welcome Dashboard
     st.markdown("""
     <div style='text-align: center; padding: 100px 0;'>
       <h1 style='font-size: 6em; margin-bottom: 0;' class='gradient-text'>💎 Graphico Pro</h1>
