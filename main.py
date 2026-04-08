@@ -177,8 +177,6 @@ if 'df' in st.session_state:
         st.write("#### 📊 Descriptive Stats", df.describe())
 
     elif page == "🧠 ML Hub":
-        # Mastermind behind missing value handling
-        df = pd.read_excel('output.xlsx', engine='openpyxl')
         df = df.copy()  # Create a copy of the DataFrame to avoid modifying the original
         def fill_missing_values(df):
             for column in df.columns:
