@@ -326,9 +326,6 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# Temporary Request
-st.info("Please submit your review with us, we have just updated our review system so that, now I can read your reviews and ratings. Thanks for letting your support with us!")
-
 if st.query_params.get("sitemap") == "true":
     st.text("Engine Status: 100% Operational")
     st.stop()
