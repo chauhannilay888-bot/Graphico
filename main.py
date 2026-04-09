@@ -213,7 +213,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             df = pd.get_dummies(df, columns=[t_colm])
             st.session_state.df = df 
             st.write(df)
-            st.return()
+            st.rerun()
           
         work_option = st.radio("Select the option to work on",
                                ("Edit DataFrame", "Make Predictions"))
