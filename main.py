@@ -219,9 +219,9 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                 st.success(f"Boom! Column '{t_colm}' exploded into multiple features.")
                 st.rerun() # Refresh everything
 
-        # Display current state
-        st.write("Current Data Preview:")
-        st.dataframe(df)
+            # Display current state
+            st.write("Current Data Preview:")
+            st.dataframe(df)
       
         if work_option == "Edit DataFrame":
             df = st.session_state.get('df', df)
