@@ -202,17 +202,15 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
 
         le = LabelEncoder()
         encoding_type = st.selectbox("Select the type of Encoding", 
-                                     ("Label Encoding", "One-Hot Encoding"))
+                                     ("Label Encoding (for 2 categories)", "One-Hot Encoding (for 2 or more categories)"))
         t_colm = st.selectbox("Select the column to encode", df.columns)
         
-        if encoding_type == "Label Encoding":
+        if encoding_type == "Label Encoding (for 2 categories)":
             encd_colm_name = str(t_colm) + "_encoded"
             df[encd_colm_name] = le.fit_transform(df[t_colm])
-            st.session_state.df = df
             st.write(df)
-        elif encoding_type == "One-Hot Encoding":
+        elif encoding_type == "One-Hot Encoding (for 2 or more categories)":
             df = pd.get_dummies(df, columns=[t_colm])
-            st.session_state.df = df 
             st.write(df)
           
         work_option = st.radio("Select the option to work on",
