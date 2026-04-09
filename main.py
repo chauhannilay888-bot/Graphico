@@ -224,8 +224,6 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             st.dataframe(df)
       
         if work_option == "Edit DataFrame":
-            df = st.session_state.get('df', df)
-
             op = st.selectbox("Select the editing option",
                               ("Remove Column", "Remove Row", "Replace or Add Value"))
 
