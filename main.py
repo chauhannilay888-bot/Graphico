@@ -207,7 +207,6 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         t_colm = st.selectbox("Select the column to encode", df.columns)
         
         if encoding_type == "Label Encoding":
-            df = st.session_state.get('df', df)
             encd_colm_name = str(t_colm) + "_encoded"
             df[encd_colm_name] = le.fit_transform(df[t_colm])
             keep = st.checkbox("**Keep Encoding**")
@@ -217,7 +216,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         elif encoding_type == "One-Hot Encoding":
             df = st.session_state.get('df', df)
             df = pd.get_dummies(df, columns=[t_colm])
-            keep = st.checkbox("**Keep Encoding")
+            keep = st.checkbox("**Keep Encoding**")
             if keep:
                 st.session_state['df'] = df
             st.write(df)
