@@ -224,7 +224,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         work_option = st.radio("Select the option to work on",
                                ("**Edit DataFrame**", "**Make Predictions**"))
 
-        if work_option == "Edit DataFrame":
+        if work_option == "**Edit DataFrame**":
             df = st.session_state.get('df', df)
 
             op = st.selectbox("Select the editing option",
@@ -283,7 +283,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             "data.xlsx",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        elif work_option == "Make Predictions":
+        elif work_option == "**Make Predictions**":
             df = st.session_state.get('df', df)
            
             st.subheader("Model Training and Predictions")
