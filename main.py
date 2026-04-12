@@ -213,6 +213,9 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         elif encoding_type == "One-Hot Encoding":
             df = pd.get_dummies(df, columns=[t_colm])
             st.write(df)
+        keep = st.checkbox("Keep Encoding")
+        if keep:
+          df = st.session_state.get('df', df)
 
         work_option = st.radio("Select the option to work on",
                                ("Edit DataFrame", "Make Predictions"))
