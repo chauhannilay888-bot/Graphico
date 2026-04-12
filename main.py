@@ -222,7 +222,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             st.write(df)
     
         work_option = st.radio("Select the option to work on",
-                               ("Edit DataFrame", "Make Predictions"))
+                               ("**Edit DataFrame**", "**Make Predictions**"))
 
         if work_option == "Edit DataFrame":
             df = st.session_state.get('df', df)
