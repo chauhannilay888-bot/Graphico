@@ -216,6 +216,8 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         keep = st.checkbox("Keep Encoding")
         if keep:
           st.session_state['df'] = df
+        else:
+          st.info("encoding will not add in your original dataset")
 
         work_option = st.radio("Select the option to work on",
                                ("Edit DataFrame", "Make Predictions"))
