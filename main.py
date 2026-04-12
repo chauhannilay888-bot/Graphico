@@ -266,7 +266,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             "data.csv", "text/csv")
 
             # JSON
-            st.download_button("📥 JSON", df.to_json(orient="records").encode(),
+            st.download_button("📥 JSON", df.to_json(orient="records", indent=4).encode(),
             "data.json", "application/json")
 
             # Excel (openpyxl engine)
