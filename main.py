@@ -260,6 +260,20 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
            
             st.write("**Updated DataFrame:**")
             st.dataframe(df)
+            # CSV
+            st.download_button("📥 CSV", df.to_csv(index=False).encode(),
+            "data.csv", "text/csv")
+
+            # JSON
+            st.download_button("📥 JSON", df.to_json(orient="records").encode(),
+            "data.json", "application/json")
+
+            # Excel (openpyxl engine)
+            buffer = BytesIO()
+            df.to_excel(buffer, index=False, engine="openpyxl")
+            st.download_button("📥 Excel", buffer.getvalue(),
+            "data.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         elif work_option == "Make Predictions":
             df = st.session_state.get('df', df)
