@@ -209,15 +209,13 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         if encoding_type == "Label Encoding":
             encd_colm_name = str(t_colm) + "_encoded"
             df[encd_colm_name] = le.fit_transform(df[t_colm])
-            st.session_state['df'] = df
             st.write(df)
         elif encoding_type == "One-Hot Encoding":
             df = pd.get_dummies(df, columns=[t_colm])
-            st.session_state['df'] = df
             st.write(df)
         keep = st.checkbox("Keep Encoding")
         if keep:
-          df = st.session_state.get('df', df)
+          st.session_state['df'] = df
 
         work_option = st.radio("Select the option to work on",
                                ("Edit DataFrame", "Make Predictions"))
