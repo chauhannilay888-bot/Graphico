@@ -192,7 +192,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                 for column in df.columns:
                     if df[column].isnull().any():
                         if pd.api.types.is_numeric_dtype(df[column]):
-                            df[column].fillna(df[column].mean(), inplace=True)
+                            df[column].fillna(round(df[column].mean()), inplace=True)
                         else:
                             mode_vals = df[column].mode()
                             df[column].fillna(mode_vals[0] if not mode_vals.empty else "Unknown", inplace=True)
