@@ -6,6 +6,7 @@ import numpy as np
 import plotly.express as px
 import os
 from PIL import Image
+from io import BytesIO
 from streamlit_gsheets import GSheetsConnection
 from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LinearRegression
