@@ -50,7 +50,7 @@ components.html(ga_code, height=0)
 # ---------------- 2. PAGE CONFIG ----------------
 st.set_page_config(
   page_title="Graphico Pro 🚀 | Nilay's Masterpiece",
-  page_icon="💎",
+  page_icon="Naw4n.jpg",
   layout="wide",
   initial_sidebar_state="expanded"
 )
