@@ -87,7 +87,6 @@ def smart_clean_df(df):
 
 # ---------------- 4. SIDEBAR NAVIGATION ----------------
 with st.sidebar:
-    st.markdown("<h1 style='text-align: center; font-size: 2.2em;' class='gradient-text'>💎 GRAPHICO PRO</h1>", unsafe_allow_html=True)
     st.divider()
   
     page = st.radio("✨ Control Center",
