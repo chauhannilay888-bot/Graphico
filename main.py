@@ -87,6 +87,7 @@ def smart_clean_df(df):
 
 # ---------------- 4. SIDEBAR NAVIGATION ----------------
 with st.sidebar:
+    st.title("Navigation)
     st.divider()
   
     page = st.radio("✨ Control Center",
