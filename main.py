@@ -356,22 +356,22 @@ elif page == "📖 Sample Vault":
 else:
     st.markdown("""
     <div style='text-align: center; padding: 100px 0;'>
-    <h1 style='font-size: 6em; margin-bottom: 0; display: flex; align-items: center; justify-content: center; gap: 20px;' class='gradient-text'>
-    <img src="Naw4n.jpg" style="width: 80px; height: 80px; object-fit: contain; vertical-align: middle;" alt="Graphico Icon">
-    Graphico Pro
-    </h1>
-    <p style='font-size: 1.8em; color: #a1a1a1; margin-top: 0;'>The Professional Data Studio by Nilay</p>
-    <br><br>
-    <div style='display: flex; justify-content: center; gap: 30px;'>
-      <div class='card-box' style='width: 300px;'><h3>⚡ Fast</h3><p>Instant visualization for any file.</p></div>
-      <div class='card-box' style='width: 300px;'><h3>🧠 Smart</h3><p>Built-in AI forecasting logic.</p></div>
-      <div class='card-box' style='width: 300px;'><h3>🛠️ Reliable</h3><p>Full-scale data surgery tools.</p></div>
+      <h1 style='font-size: 6em; margin-bottom: 0; display: flex; align-items: center; justify-content: center; gap: 20px;' class='gradient-text'>
+        <img src="Naw4n.jpg" style="width: 80px; height: 80px; object-fit: contain; vertical-align: middle;" alt="Graphico Icon">
+        Graphico Pro
+      </h1>
+      <p style='font-size: 1.8em; color: #a1a1a1; margin-top: 0;'>The Professional Data Studio by Nilay</p>
+      <br><br>
+      <div style='display: flex; justify-content: center; gap: 30px;'>
+        <div class='card-box' style='width: 300px;'><h3>⚡ Fast</h3><p>Instant visualization for any file.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>🧠 Smart</h3><p>Built-in AI forecasting logic.</p></div>
+        <div class='card-box' style='width: 300px;'><h3>🛠️ Reliable</h3><p>Full-scale data surgery tools.</p></div>
+      </div>
+      <br><br>
+      <h4 style='color: #4facfe;'>👈 Upload your Dataset in the Sidebar to Launch Engine</h4>
     </div>
-    <br><br>
-    <h4 style='color: #4facfe;'>👈 Upload your Dataset in the Sidebar to Launch Engine</h4>
-    </div>
-""", unsafe_allow_html=True)
-
+    """, unsafe_allow_html=True)
+  
 if st.query_params.get("sitemap") == "true":
     st.text("Engine Status: 100% Operational")
     st.stop()
