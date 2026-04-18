@@ -350,6 +350,20 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                     for col, f in zip(st.columns(3), files[i:i+3]):
                         col.image(Image.open(f"tutorial_PNGs/{f}"), caption=f, use_column_width=True)
 
+# Sample should also be accessable without any file upload
+elif page == "📖 Sample Vault":
+        st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
+        if os.path.exists("Tutorial.mp4"):
+            st.video("Tutorial.mp4")
+            st.write("Taste it Nicely! ")
+            files = sorted([f for f in os.listdir("tutorial_PNGs") if f.lower().endswith(".png")])
+            if not files:
+                st.warning("No PNG files found.")
+            else:
+                for i in range(0, len(files), 3):
+                    for col, f in zip(st.columns(3), files[i:i+3]):
+                        col.image(Image.open(f"tutorial_PNGs/{f}"), caption=f, use_column_width=True)
+
 else:
     # Landing page when no data is uploaded
     icon_base64 = img_to_base64("Naw4n.jpg")
