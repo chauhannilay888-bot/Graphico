@@ -96,16 +96,18 @@ with st.sidebar:
   
     st.markdown("### 📂 Data Source")
     u_file = st.file_uploader("Upload CSV, Excel or JSON",
-                              type=["csv", "xlsx", "xls", "json"])
+                              type=["csv", "xlsx", "xls", "json", "parquet"])
   
     if u_file:
         if "file_id" not in st.session_state or st.session_state.file_id != u_file.name:
             ext = u_file.name.split(".")[-1].lower()
             try:
                 if ext == "csv":
-                    data = pd.read_csv(u_file)
+                    data = pd.read_csv(u_file, engine="pyarrow")
                 elif ext in ["xlsx", "xls"]:
-                    data = pd.read_excel(u_file)
+                    data = pd.read_excel(u_file, engine="openpyxl")
+                elif ext == "parquet":
+                    data = pd.read_parquet(u_file, engine="pyarrow")
                 else:
                     data = pd.read_json(u_file)
               
