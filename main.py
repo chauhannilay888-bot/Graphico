@@ -249,7 +249,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             targ = st.selectbox("Target Output (Numeric)", num_cols, key="t_ml")
             if feat and targ:
                 if models == "Polynomial Regression":
-                    degree = st.slider("Select Degree", 2, 5, 2)
+                    degree = st.slider("Select Degree", [2, 3, 4, 5])
                     feat = st.selectbox("Input Feature (Numeric)", num_cols, key="f_poly")
                     targ = st.selectbox("Target Output (Numeric)", num_cols, key="t_poly")
                     if feat and targ:
