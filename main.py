@@ -254,16 +254,18 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                     if models == "Linear Regression":
                         model = LinearRegression()
                         model.fit(df[[feat]], df[targ])
-                        pred = model.predict(df[[feat]])
-                        st.write("📈 **Predictions:**")
-                        st.dataframe(pd.DataFrame({f"{targ}_pred": pred}).head(100))
+                        w_to_pred = st.number_input(f"Enter the value to predict for {feat} (to predict {targ})")
+                        pred = model.predict([[w_to_pred]])[0]
+                        st.write("📈 **Prediction**")
+                        st.subheader(pred)
                     elif models == "Polynomial Regression":
                         degree = st.slider("Polynomial Degree", 2, 5, 2)
                         model = make_pipeline(PolynomialFeatures(degree), LinearRegression())
                         model.fit(df[[feat]], df[targ])
-                        pred = model.predict(df[[feat]])
-                        st.write("📈 **Predictions:**")
-                        st.dataframe(pd.DataFrame({f"{targ}_pred": pred}).head(100))
+                        w_to_pred = st.number_input(f"Enter the value to predict for {feat} (to predict {targ})")
+                        pred = model.predict([[w_to_pred]])[0]
+                        st.write("📈 **Prediction**")
+                        st.subheader(pred)
 
     elif page == "📖 Sample Vault":
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
