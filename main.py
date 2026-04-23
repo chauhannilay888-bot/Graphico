@@ -244,15 +244,28 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             st.dataframe(df.head(100))
             
         elif work_option == "Make Predictions":
+            models = st.selectbox("Select Model", ("Linear Regression", "Polynomial Regression"))
             feat = st.selectbox("Input Feature (Numeric)", num_cols, key="f_ml")
             targ = st.selectbox("Target Output (Numeric)", num_cols, key="t_ml")
             if feat and targ:
-                st.subheader("Linear Regression Engine")
-                model = LinearRegression().fit(df[[feat]], df[[targ]])
-                val = st.number_input("Enter input value to predict")
-                if st.button("Run Prediction"):
-                    res = model.predict([[val]])
-                    st.metric("Predicted Result", f"{res[0][0]:.4f}")
+                if models == "Polynomial Regression":
+                    degree = st.slider("Select Degree", 2, 5, 2)
+                    feat = st.selectbox("Input Feature (Numeric)", num_cols, key="f_poly")
+                    targ = st.selectbox("Target Output (Numeric)", num_cols, key="t_poly")
+                    if feat and targ:
+                        st.subheader(f"Polynomial Regression (Degree {degree}) Engine")
+                        model = make_pipeline(PolynomialFeatures(degree), LinearRegression()).fit(df[[feat]],     df[[targ]])
+                        val = st.number_input("Enter input value to predict")
+                        if st.button("Run Prediction", key="poly_pred"):
+                            res = model.predict([[val]])
+                            st.metric("Predicted Result", f"{res[0][0]:.4f}")
+                else:
+                    st.subheader("Linear Regression Engine")
+                    model = LinearRegression().fit(df[[feat]], df[[targ]])
+                    val = st.number_input("Enter input value to predict")
+                    if st.button("Run Prediction"):
+                        res = model.predict([[val]])
+                        st.metric("Predicted Result", f"{res[0][0]:.4f}")
 
     elif page == "📖 Sample Vault":
         st.markdown("<h1 class='gradient-text'>📖 Learning Resources</h1>", unsafe_allow_html=True)
