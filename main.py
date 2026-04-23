@@ -242,6 +242,30 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                     st.rerun()
             # (Additional edit logic remains same)
             st.dataframe(df.head(100))
+            # download options for excel, json, parquet and csv
+            st.markdown("### 📥 Download Cleaned Data"
+                        " (Excel, CSV, JSON, Parquet)")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                if st.button("Excel"):
+                    towrite = io.BytesIO()
+                    df.to_excel(towrite, index=False, engine="openpyxl")
+                    towrite.seek(0)
+                    st.download_button("Download Excel", towrite, file_name="cleaned_data.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            with col2:
+                if st.button("CSV"):
+                    csv_data = df.to_csv(index=False).encode('utf-8')
+                    st.download_button("Download CSV", csv_data, file_name="cleaned_data.csv", mime="text/csv")
+            with col3:
+                if st.button("JSON"):
+                    json_data = df.to_json(orient="records").encode('utf-8')
+                    st.download_button("Download JSON", json_data, file_name="cleaned_data.json", mime="application/json")
+            with col4:
+                if st.button("Parquet"):
+                    towrite = io.BytesIO()
+                    df.to_parquet(towrite, index=False, engine="pyarrow")
+                    towrite.seek(0)
+                    st.download_button("Download Parquet", towrite, file_name="cleaned_data.parquet", mime="application/octet-stream")
             
         elif work_option == "Make Predictions":
             if not num_cols:
