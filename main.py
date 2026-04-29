@@ -15,35 +15,108 @@ from sklearn.pipeline import make_pipeline
 import base64
 from pathlib import Path
 
-# --------- 1. ULTRA-PREMIUM UI CSS & ANALYTICS -----------
+# --------- 1. ULTRA-PREMIUM UI CSS & SECURITY -----------
+
 ga_code = """
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHN9KEP6KN"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-FHN9KEP6KN');
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-FHN9KEP6KN');
 </script>
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-  html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-  .stMetric {
-    background: rgba(30, 33, 48, 0.7);
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-top: 4px solid #4facfe;
-  }
-  .gradient-text {
-    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 800;
-    letter-spacing: -1px;
-  }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+
+/* Disable selection */
+* {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Blur when tab inactive */
+body.hidden {
+  filter: blur(20px) !important;
+}
+
+/* Watermark */
+#watermark {
+  position: fixed;
+  top: 35%;
+  left: 15%;
+  font-size: 48px;
+  color: rgba(255,255,255,0.06);
+  transform: rotate(-30deg);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.stMetric {
+  background: rgba(30, 33, 48, 0.7);
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-top: 4px solid #4facfe;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
 </style>
+
+<div id="watermark">CONFIDENTIAL • GRAPHICO PRO</div>
+
+<script>
+// Disable right click
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+// Block keys
+document.addEventListener("keydown", function(e) {
+    if (
+        e.key === "PrintScreen" ||
+        (e.ctrlKey && e.shiftKey && ["I","C","J"].includes(e.key)) ||
+        (e.ctrlKey && ["u","s","p"].includes(e.key.toLowerCase()))
+    ) {
+        e.preventDefault();
+    }
+});
+
+// Clear clipboard on PrintScreen
+document.addEventListener("keyup", function(e) {
+    if (e.key === "PrintScreen") {
+        navigator.clipboard.writeText("");
+    }
+});
+
+// Blur on tab switch
+document.addEventListener("visibilitychange", function() {
+    if (document.hidden) {
+        document.body.classList.add("hidden");
+    } else {
+        document.body.classList.remove("hidden");
+    }
+});
+
+// DevTools detection
+setInterval(function() {
+    const threshold = 160;
+    if (
+        window.outerWidth - window.innerWidth > threshold ||
+        window.outerHeight - window.innerHeight > threshold
+    ) {
+        document.body.innerHTML =
+        "<h1 style='color:red;text-align:center;margin-top:20%'>🚫 Developer Tools Detected</h1>";
+    }
+}, 1000);
+</script>
 """
 components.html(ga_code, height=0)
 
