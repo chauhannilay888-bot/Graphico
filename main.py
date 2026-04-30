@@ -313,6 +313,9 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                     df.drop(columns=[col_rem], inplace=True)
                     st.session_state['df'] = df
                     st.rerun()
+            elif op == "Remove Row":
+              row_rem = st.selectbox("Select the index number of row to drop", range(0, len(df)+1))
+              
             # (Additional edit logic remains same)
             st.dataframe(df.head(100))
             # download options for excel, json, parquet and csv
