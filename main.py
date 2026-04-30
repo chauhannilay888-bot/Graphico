@@ -313,9 +313,30 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                     df.drop(columns=[col_rem], inplace=True)
                     st.session_state['df'] = df
                     st.rerun()
+                    st.success("Removal Successful!")
+                  
             elif op == "Remove Row":
-              row_rem = st.selectbox("Select the index number of row to drop", range(0, len(df)+1))
-              
+              row_rem = st.selectbox("Select the index number of row to drop", range(0, len(df)+1, 1))
+              if st.button("Remove"):
+                df.drop(index=int(row_rem), inplace=True)
+                st.session_state['df'] = df
+                st.rerun()
+                st.success("Removal successful")
+            else:
+              clm = st.selectbox("From which column", df.columns)
+              row = st.selectbox("From which index", range(0, len(df)+1, 1))
+              if st.button("Delete permanently"):
+                df.drop(columns=[clm], index=int(row), inplace=True)
+                st.session_state['df'] = df
+                st.rerun()
+                st.info("Deleted")
+              new_value = st.text_input("Enter the new value to replace")
+              if st.button("Replace"):
+                df.at[int(row), clm] = new_value # Update Done!
+                st.session_state['df'] = df
+                st.rerun()
+                st.sccess("Replacement Successful")
+                
             # (Additional edit logic remains same)
             st.dataframe(df.head(100))
             # download options for excel, json, parquet and csv
