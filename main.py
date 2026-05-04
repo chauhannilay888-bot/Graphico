@@ -268,8 +268,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                 
     elif page == "🔍 Raw Analytics":
         st.markdown("<h1 class='gradient-text'>🔍 Insight Engine</h1>", unsafe_allow_html=True)
-        # BRAHMASTRA: Showing only top 5k rows to keep UI snappy
-        st.write(f"Showing sample of 5,000 rows from {len(df):,} total.")
+        st.subtitle("DataSet")
         st.dataframe(df.head(5000), use_container_width=True)
         st.write("#### 📊 Descriptive Stats", df.describe())
         
