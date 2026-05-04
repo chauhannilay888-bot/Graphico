@@ -323,19 +323,29 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                 st.rerun()
                 st.success("Removal successful")
             else:
-              clm = st.selectbox("From which column", df.columns)
-              row = st.selectbox("From which index", range(0, len(df)+1, 1))
-              if st.button("Delete permanently"):
-                df.at[int(row), clm] = None
+              try:
+                  clm = st.selectbox("From which column", df.columns)
+                  row = st.selectbox("From which index", range(0, len(df)+1, 1))
+                  if st.button("Delete permanently"):
+                    df.at[int(row), clm] = None
+                    st.session_state['df'] = df
+                    st.rerun()
+                    st.info("Deleted")
+                  new_value = st.text_input("Enter the new value to replace")
+                  if st.button("Replace"):
+                    df.at[int(row), clm] = new_value # Update Done!
+                    st.session_state['df'] = df
+                    st.rerun()
+                    st.sccess("Replacement Successful")
+              except Exception as e:
+                st.error(e)
+                st.info("Please edit manually")
+                st.data_editor(
+                df,
+                num_rows="dynamic",  # Allow adding/removing rows
+                use_container_width=True
+                )
                 st.session_state['df'] = df
-                st.rerun()
-                st.info("Deleted")
-              new_value = st.text_input("Enter the new value to replace")
-              if st.button("Replace"):
-                df.at[int(row), clm] = new_value # Update Done!
-                st.session_state['df'] = df
-                st.rerun()
-                st.sccess("Replacement Successful")
                 
             # (Additional edit logic remains same)
             st.dataframe(df.head(100))
