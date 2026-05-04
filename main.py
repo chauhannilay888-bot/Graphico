@@ -339,13 +339,6 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                     st.sccess("Replacement Successful")
               except Exception as e:
                 st.error(e)
-                st.info("Please edit manually")
-                st.data_editor(
-                df,
-                num_rows="dynamic",  # Allow adding/removing rows
-                use_container_width=True
-                )
-                st.session_state['df'] = df
                 
             # (Additional edit logic remains same)
             st.dataframe(df.head(100))
