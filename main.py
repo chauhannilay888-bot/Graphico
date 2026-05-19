@@ -324,7 +324,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             else:
               try:
                   clm = st.selectbox("From which column", df.columns)
-                  row = st.selectbox("From which index", range(0, len(df)+1, 1))
+                  row = st.selectbox("From which index", range(0, len(df), 1))
                   if st.button("Delete permanently"):
                     df.at[int(row), clm] = None
                     st.session_state['df'] = df
