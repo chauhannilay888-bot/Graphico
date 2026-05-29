@@ -239,7 +239,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             st.markdown("### 🎨 Styling")
             g_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter", "Pie", "Histogram", "Box Plot", "Area Chart"])
             x_ax = st.selectbox("X-Axis (Category)", all_cols)
-            y_ax = st.selectbox("Y-Axis (Numeric)", num_cols) if num_cols else None
+            y_ax = st.multiselect("Y-Axis (Numeric)", num_cols) if num_cols else None
             color_by = st.selectbox("Color By (Optional)", [None] + all_cols)
       
         with v_col:
