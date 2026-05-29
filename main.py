@@ -237,9 +237,14 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         v_col, s_col = st.columns([4, 1])
         with s_col:
             st.markdown("### 🎨 Styling")
-            g_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter", "Pie", "Histogram", "Box Plot", "Area Chart"])
+            mg = st.checkbox("Want to make clart of multiple columns in one figure? ")
             x_ax = st.selectbox("X-Axis (Category)", all_cols)
-            y_ax = st.multiselect("Y-Axis (Numeric)", num_cols) if num_cols else None
+            if mg:
+              y_ax = st.multiselect("Y-Axis (Numeric)", num_cols) if num_cols else None
+              g_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter", "Histogram", "Box Plot", "Area Chart"])
+            else:
+              y_ax = st.selectbox("Y-Axis (Numeric)", num_cols) if num_cols else None
+              g_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter", "Pie", "Histogram", "Box Plot", "Area Chart"])
             color_by = st.selectbox("Color By (Optional)", [None] + all_cols)
       
         with v_col:
