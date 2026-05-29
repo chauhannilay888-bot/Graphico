@@ -234,7 +234,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
         m3.metric("🧹 Cells Cleaned", int(df.isnull().sum().sum()))
         st.divider()
         
-        v_col, s_col = st.columns([3, 1])
+        v_col, s_col = st.columns([4, 1])
         with s_col:
             st.markdown("### 🎨 Styling")
             g_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter", "Pie", "Histogram", "Box Plot", "Area Chart"])
