@@ -242,6 +242,7 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
             if mg:
               y_ax = st.multiselect("Y-Axis (Numeric)", num_cols) if num_cols else None
               g_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter", "Histogram", "Box Plot", "Area Chart"])
+              color_by = None
             else:
               y_ax = st.selectbox("Y-Axis (Numeric)", num_cols) if num_cols else None
               g_type = st.selectbox("Chart Type", ["Bar", "Line", "Scatter", "Pie", "Histogram", "Box Plot", "Area Chart"])
