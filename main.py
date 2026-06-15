@@ -198,7 +198,7 @@ with st.sidebar:
                 st.error(f"Upload Failed: {e}")
 
     st.divider()
-    if st.button("🌟 Support Nilay", use_container_width=True):
+    if st.button("🌟 Rewiew Us", use_container_width=True):
         st.session_state.review_active = not st.session_state.get("review_active", False)
     
     if st.session_state.get("review_active"):
