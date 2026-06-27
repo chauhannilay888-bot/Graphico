@@ -133,7 +133,7 @@ def img_to_base64(image_path):
 
 # ---------------- 2. PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Graphico Pro 🚀 | Nilay's Masterpiece",
+    page_title="Graphico Pro | Data Disneyland",
     page_icon="Naw4n.jpg",
     layout="wide",
     initial_sidebar_state="expanded"
