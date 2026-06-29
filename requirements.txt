@@ -8,3 +8,6 @@ st-gsheets-connection
 Pillow
 pyarrow
 requests
+google-auth
+google-auth-oauthlib
+
