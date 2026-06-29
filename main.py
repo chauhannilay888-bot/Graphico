@@ -14,8 +14,9 @@ from sklearn.pipeline import make_pipeline
 import base64
 from pathlib import Path
 from datetime import datetime, timedelta
+import hashlib
 
-# --------- 1. ULTRA-PREMIUM UI CSS & SECURITY -----------
+# ================== ULTRA-PREMIUM UI CSS & SECURITY ==================
 ga_code = """
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHN9KEP6KN"></script>
 <script>
@@ -28,11 +29,8 @@ gtag('config', 'G-FHN9KEP6KN');
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-/* Disable selection */
 * { -webkit-user-select: none !important; user-select: none !important; }
-/* Blur when tab inactive */
 body.hidden { filter: blur(20px) !important; }
-/* Watermark */
 #watermark { position: fixed; top: 35%; left: 15%; font-size: 48px; color: rgba(255,255,255,0.06); transform: rotate(-30deg); pointer-events: none; z-index: 9999; }
 .stMetric { background: rgba(30, 33, 48, 0.7); padding: 20px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-top: 4px solid #4facfe; }
 .gradient-text { background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; letter-spacing: -1px; }
@@ -41,7 +39,6 @@ body.hidden { filter: blur(20px) !important; }
 <div id="watermark">CONFIDENTIAL • GRAPHICO PRO</div>
 
 <script>
-// Disable right click, keys, devtools (your original)
 document.addEventListener("contextmenu", e => e.preventDefault());
 document.addEventListener("keydown", function(e) {
     if (e.key === "PrintScreen" || (e.ctrlKey && e.shiftKey && ["I","C","J"].includes(e.key)) || (e.ctrlKey && ["u","s","p"].includes(e.key.toLowerCase()))) e.preventDefault();
@@ -70,44 +67,86 @@ px.defaults.template = "plotly_dark"
 # ================== USER AUTH & DB ==================
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-def get_or_create_user(email):
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def get_user_by_email(email):
     try:
         df = conn.read(worksheet="Sheet1", ttl=0)
         user = df[df['Email'] == email]
-        if user.empty:
-            new_user = pd.DataFrame([{
-                "Email": email,
-                "JoinDate": datetime.now().strftime("%Y-%m-%d"),
-                "Status": "Free",
-                "ExpiryDate": ""
-            }])
-            updated = pd.concat([df, new_user], ignore_index=True)
-            conn.update(worksheet="Sheet1", data=updated)
-            return {"Email": email, "Status": "Free", "ExpiryDate": ""}
-        return user.iloc[0].to_dict()
+        if not user.empty:
+            return user.iloc[0].to_dict()
+        return None
     except:
         return None
 
+def create_user(email, password):
+    try:
+        df = conn.read(worksheet="Sheet1", ttl=0)
+        hashed = hash_password(password)
+        new_user = pd.DataFrame([{
+            "Email": email,
+            "Password": hashed,
+            "JoinDate": datetime.now().strftime("%Y-%m-%d"),
+            "Status": "Free",
+            "ExpiryDate": ""
+        }])
+        updated = pd.concat([df, new_user], ignore_index=True)
+        conn.update(worksheet="Sheet1", data=updated)
+        return True
+    except:
+        return False
+
 if "user" not in st.session_state:
     st.session_state.user = None
-    st.session_state.download_count = 0
 
 if st.session_state.user is None:
     st.markdown("<h1 class='gradient-text' style='text-align:center;'>Graphico Pro</h1>", unsafe_allow_html=True)
-    email = st.text_input("Login with Email", "user@gmail.com")
-    if st.button("🔑 Continue with Email"):
-        st.session_state.user = get_or_create_user(email)
-        st.rerun()
+    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    with tab1:
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Password", type="password", key="login_pass")
+        if st.button("Login"):
+            user = get_user_by_email(email)
+            if user and user.get("Password") == hash_password(password):
+                st.session_state.user = user
+                st.rerun()
+            else:
+                st.error("Invalid credentials")
+    with tab2:
+        email = st.text_input("Email", key="signup_email")
+        password = st.text_input("Password", type="password", key="signup_pass")
+        if st.button("Sign Up"):
+            if get_user_by_email(email):
+                st.error("Email already registered")
+            else:
+                if create_user(email, password):
+                    st.success("Account created! Please Login.")
+                else:
+                    st.error("Signup failed")
     st.stop()
 
 user = st.session_state.user
 is_paid = user.get("Status") == "Paid" and datetime.now().strftime("%Y-%m-%d") <= user.get("ExpiryDate", "1900-01-01")
 
-# ---------------- SIDEBAR ----------------
+if not is_paid:
+    st.error("🔒 The full app is locked until you subscribe.")
+    if st.button("💳 Subscribe Now - ₹199 for 1 Month", type="primary", use_container_width=True):
+        st.markdown("[Proceed to Razorpay Payment](https://razxyz.com)", unsafe_allow_html=True)
+        if st.button("✅ Test Payment Success"):
+            expiry = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+            dfu = conn.read(worksheet="Sheet1")
+            dfu.loc[dfu['Email'] == user['Email'], 'Status'] = "Paid"
+            dfu.loc[dfu['Email'] == user['Email'], 'ExpiryDate'] = expiry
+            conn.update(worksheet="Sheet1", data=dfu)
+            st.success("✅ Subscription Activated! App Unlocked.")
+            st.rerun()
+    st.stop()
+
+# ================== YOUR ORIGINAL APP CODE STARTS HERE ==================
+
 with st.sidebar:
     st.title("Navigation")
-    st.write(f"👤 {user['Email']}")
-    st.info(f"Status: {'✅ Pro' if is_paid else '🔓 Free (1 download left)'}")
     st.divider()
     page = st.radio("✨ Control Center", ["🏠 Dashboard", "🔍 Raw Analytics", "🧠 ML Hub", "📖 Sample Vault"], index=0)
     st.markdown("### 📂 Data Source")
@@ -130,31 +169,13 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Upload Failed: {e}")
     st.divider()
-    if st.button("🌟 Review Us", use_container_width=True):
-        st.session_state.review_active = not st.session_state.get("review_active", False)
-    if st.session_state.get("review_active"):
-        with st.expander("📝 Feedback Loop", expanded=True):
-            r = st.slider("Rating", 1, 5, 5)
-            m = st.text_input("Message")
-            if st.button("Submit Review"):
-                try:
-                    existing = conn.read(worksheet="Sheet1", ttl=0)
-                    new_row = pd.DataFrame([{"rating": int(r), "review": m.strip()}])
-                    updated = pd.concat([existing, new_row], ignore_index=True).dropna(how='all')
-                    conn.update(worksheet="Sheet1", data=updated)
-                    st.success("Review Logged! 🚀")
-                    st.balloons()
-                    st.session_state.review_active = False
-                except:
-                    st.error("Link Error! Check GSheets.")
     st.caption("Crafted with ❤️ by Nilay")
 
-# ---------------- MAIN LOGIC ----------------
 if 'df' in st.session_state and st.session_state.df is not None and not st.session_state.df.empty:
     df = st.session_state.df
     all_cols = df.columns.tolist()
     num_cols = df.select_dtypes(include=np.number).columns.tolist()
-   
+    
     if page == "🏠 Dashboard":
         st.markdown("<h1 class='gradient-text'>📊 Visualization Dashboard</h1>", unsafe_allow_html=True)
         m1, m2, m3 = st.columns(3)
@@ -195,13 +216,13 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                     st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
                 st.error(f"Viz Error: {e}")
-               
+                
     elif page == "🔍 Raw Analytics":
         st.markdown("<h1 class='gradient-text'>🔍 Insight Engine</h1>", unsafe_allow_html=True)
         st.subheader("DataSet")
         st.dataframe(df.head(5000), use_container_width=True)
         st.write("#### 📊 Descriptive Stats", df.describe())
-       
+        
     elif page == "🧠 ML Hub":
         st.title("Welcome to DS Hub, optimized for your data!")
         encoding_type = st.selectbox("Select Encoding Type", ("Label Encoding", "One-Hot Encoding"))
@@ -236,21 +257,16 @@ if 'df' in st.session_state and st.session_state.df is not None and not st.sessi
                     st.session_state['df'] = df
                     st.rerun()
                     st.success("Removal Successful!")
-            # Add your other edit logic here...
+            # Add your remaining edit logic here...
             st.dataframe(df.head(100))
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 if st.button("Excel"):
-                    if not is_paid and st.session_state.download_count >= 1:
-                        st.error("Free limit reached!")
-                        st.markdown("[Upgrade - ₹199](https://razxyz.com)", unsafe_allow_html=True)
-                    else:
-                        st.session_state.download_count += 1
-                        towrite = io.BytesIO()
-                        df.to_excel(towrite, index=False, engine="openpyxl")
-                        towrite.seek(0)
-                        st.download_button("Download Excel", towrite, file_name="cleaned_data.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            # Add other download buttons similarly
+                    towrite = io.BytesIO()
+                    df.to_excel(towrite, index=False, engine="openpyxl")
+                    towrite.seek(0)
+                    st.download_button("Download Excel", towrite, file_name="cleaned_data.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            # Add other download buttons...
         elif work_option == "Make Predictions":
             # Your prediction code here
             pass
@@ -278,15 +294,6 @@ else:
     </div>
     """)
 
-# Payment Button
-if not is_paid:
-    if st.button("💳 Upgrade to Pro - ₹199 / 1 Month", type="primary", use_container_width=True):
-        st.markdown("[Proceed to Razorpay](https://razxyz.com)", unsafe_allow_html=True)
-        if st.button("✅ Test Payment Success"):
-            expiry = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
-            dfu = conn.read(worksheet="Sheet1")
-            dfu.loc[dfu['Email'] == user['Email'], 'Status'] = "Paid"
-            dfu.loc[dfu['Email'] == user['Email'], 'ExpiryDate'] = expiry
-            conn.update(worksheet="Sheet1", data=dfu)
-            st.success("Pro Activated for 30 days!")
-            st.rerun()
+# Payment refresh
+if st.button("🔄 Refresh Subscription Status"):
+    st.rerun()
