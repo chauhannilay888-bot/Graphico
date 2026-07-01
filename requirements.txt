@@ -1,5 +1,5 @@
-streamlit
-pandas
+streamlit 
+pandas == 2.3.3
 numpy
 plotly
 scikit-learn
@@ -7,3 +7,4 @@ openpyxl
 st-gsheets-connection
 Pillow
 pyarrow
+authlib
