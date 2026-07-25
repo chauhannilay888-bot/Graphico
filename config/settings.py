@@ -63,6 +63,7 @@ ALLOWED_ORIGINS = [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "https://graphico.streamlit.app",
+    "https://graphico-backend.streamlit.app"
 ]
 
 # HTTP methods allowed for CORS requests
@@ -101,6 +102,7 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_REDIRECT_URIS = [
     "http://localhost:5500",
     "https://graphico.streamlit.app",
+    "https://graphico-backend.streamlit.app"
 ]
 
 # Google OAuth 2.0 endpoints
