@@ -1,575 +1,437 @@
 """
-Graphico Pro - Main Backend Server
-Production-grade Flask application with comprehensive API, authentication,
-session management, CORS, and error handling.
-Runs on both Flask (python backend/backend.py) and Streamlit (streamlit run backend/backend.py).
-
-Startup Order:
-1. Configuration validation
-2. Directory structure creation
-3. Service initialization (auth, session, AI, projects, files, export, PDF, data)
-4. Flask app creation with middleware
-5. Route registration
-6. Server startup
+Graphico Pro — Streamlit Dashboard
+Pure Streamlit frontend that communicates with the Flask backend API.
+Run: streamlit run streamlit_app.py
 """
 
-import sys
-import os
-import logging
-from pathlib import Path
-from datetime import datetime
+import streamlit as st
+import requests
+import pandas as pd
+import plotly.graph_objects as go
+import json
+import io
+import time
 
-# Add project root to Python path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
 
-from flask import Flask, request, jsonify, g
-from flask_cors import CORS
+API_BASE_URL = "http://localhost:8501"
+API_URL = f"{API_BASE_URL}/api/v1"
 
-from config.settings import (
-    SERVER_HOST,
-    SERVER_PORT,
-    SERVER_DEBUG,
-    ALLOWED_ORIGINS,
-    ALLOWED_METHODS,
-    ALLOWED_HEADERS,
-    ALLOWED_CREDENTIALS,
-    MAX_REQUEST_SIZE_BYTES,
-    REQUEST_TIMEOUT_SECONDS,
-    ensure_directories_exist,
-    validate_configuration,
-    is_production,
-    get_database_config,
-    get_ai_providers,
-)
-from config.constants import (
-    HttpStatus,
-    ApiMessage,
-    ErrorCode,
-    ContentType,
-    API_PREFIX,
-)
-from backend.utils import (
-    setup_logger,
-    get_timestamp,
-    get_utc_now,
-    create_response,
-    success_response,
-    error_response,
-    get_client_ip,
-    ensure_directory,
+st.set_page_config(
+    page_title="Graphico Pro",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # ============================================================================
-# EARLY LOGGING SETUP
+# SESSION STATE
 # ============================================================================
 
-logger = setup_logger("graphico")
+if "session_token" not in st.session_state:
+    st.session_state.session_token = None
+if "user" not in st.session_state:
+    st.session_state.user = None
+if "chat_messages" not in st.session_state:
+    st.session_state.chat_messages = []
+if "available_models" not in st.session_state:
+    st.session_state.available_models = []
+if "data_preview" not in st.session_state:
+    st.session_state.data_preview = None
+if "data_file_path" not in st.session_state:
+    st.session_state.data_file_path = None
+if "projects" not in st.session_state:
+    st.session_state.projects = []
+if "active_project_id" not in st.session_state:
+    st.session_state.active_project_id = None
 
 # ============================================================================
-# SERVICE INITIALIZATION (MUST HAPPEN BEFORE ROUTE REGISTRATION)
+# API HELPERS
 # ============================================================================
 
-def initialize_all_services() -> dict:
-    """
-    Initialize all backend services in the correct dependency order.
+def api_request(method, endpoint, data=None, files=None, is_file_download=False):
+    headers = {}
+    if st.session_state.session_token:
+        headers["Authorization"] = f"Bearer {st.session_state.session_token}"
     
-    Services must be initialized before routes are registered because:
-    - Routes import and use service instances
-    - Services need their storage files and directories ready
-    - AI providers need to be validated
+    url = f"{API_URL}{endpoint}"
     
-    Returns:
-        Dictionary with initialization status for each service
-    """
-    status = {
-        "started_at": get_timestamp(),
-        "services": {},
-        "warnings": [],
-        "errors": [],
-    }
-    
-    logger.info("=" * 60)
-    logger.info("Graphico Pro - Service Initialization")
-    logger.info("=" * 60)
-    
-    # Step 0: Ensure directories exist
-    logger.info("Creating required directories...")
     try:
-        ensure_directories_exist()
-        logger.info("✓ Directory structure created")
-    except Exception as e:
-        error_msg = f"Failed to create directories: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        return status
-    
-    # Step 1: Validate configuration
-    logger.info("Validating configuration...")
-    config_issues = validate_configuration()
-    
-    for issue in config_issues:
-        if issue.startswith("ERROR"):
-            logger.error(f"✗ {issue}")
-            status["errors"].append(issue)
+        if method == "GET":
+            resp = requests.get(url, headers=headers, timeout=30)
+        elif method == "POST":
+            if files:
+                resp = requests.post(url, headers=headers, files=files, timeout=60)
+            else:
+                headers["Content-Type"] = "application/json"
+                resp = requests.post(url, headers=headers, json=data, timeout=60)
+        elif method == "DELETE":
+            resp = requests.delete(url, headers=headers, timeout=30)
         else:
-            logger.warning(f"⚠ {issue}")
-            status["warnings"].append(issue)
-    
-    if not config_issues:
-        logger.info("✓ Configuration validated successfully")
-    
-    # Step 2: Log available configuration
-    db_config = get_database_config()
-    ai_providers = get_ai_providers()
-    
-    logger.info(f"Database type: {db_config['type']}")
-    logger.info(f"AI Providers configured: {sum(1 for v in ai_providers.values() if v)}/{len(ai_providers)}")
-    
-    for provider, configured in ai_providers.items():
-        status_icon = "✓" if configured else "✗"
-        logger.info(f"  {status_icon} {provider}: {'configured' if configured else 'not configured'}")
-    
-    # Step 3: Initialize Session Manager
-    logger.info("Initializing session manager...")
-    try:
-        from backend.session import get_session_manager
-        session_mgr = get_session_manager()
-        active_sessions = session_mgr.store.get_active_sessions_count()
-        logger.info(f"✓ Session manager initialized ({active_sessions} active sessions)")
-        status["services"]["session_manager"] = {
-            "status": "ok",
-            "active_sessions": active_sessions,
-        }
-    except Exception as e:
-        error_msg = f"Failed to initialize session manager: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        status["services"]["session_manager"] = {"status": "error", "error": str(e)}
-    
-    # Step 4: Initialize Auth Service
-    logger.info("Initializing authentication service...")
-    try:
-        from backend.auth import get_auth_service
-        auth_svc = get_auth_service()
-        active_users = auth_svc.user_store.get_active_users_count()
-        total_users = auth_svc.user_store.get_total_users_count()
-        csrf_active = auth_svc.google_oauth.csrf_store.get_active_state_count()
-        logger.info(f"✓ Auth service initialized ({active_users} active users, {total_users} total)")
-        logger.info(f"  CSRF state store: {csrf_active} active state tokens")
-        status["services"]["auth_service"] = {
-            "status": "ok",
-            "active_users": active_users,
-            "total_users": total_users,
-        }
-    except Exception as e:
-        error_msg = f"Failed to initialize auth service: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        status["services"]["auth_service"] = {"status": "error", "error": str(e)}
-    
-    # Step 5: Initialize AI Service
-    logger.info("Initializing AI service...")
-    try:
-        from backend.services import get_ai_service
-        ai_svc = get_ai_service()
-        available_models = ai_svc.get_available_models()
-        chat_models = sum(1 for m in available_models if m.get("type") == "chat")
-        image_models = sum(1 for m in available_models if m.get("type") == "image")
-        logger.info(f"✓ AI service initialized ({len(available_models)} models: {chat_models} chat, {image_models} image)")
-        for model in available_models:
-            logger.info(f"  • {model['display_name']} ({model['provider']})")
-        status["services"]["ai_service"] = {
-            "status": "ok",
-            "total_models": len(available_models),
-            "chat_models": chat_models,
-            "image_models": image_models,
-        }
-    except Exception as e:
-        error_msg = f"Failed to initialize AI service: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        status["services"]["ai_service"] = {"status": "error", "error": str(e)}
-    
-    # Step 6: Initialize Project Service
-    logger.info("Initializing project service...")
-    try:
-        from backend.services import get_project_service
-        project_svc = get_project_service()
-        total_projects = len(project_svc._projects) if hasattr(project_svc, '_projects') else 0
-        logger.info(f"✓ Project service initialized ({total_projects} projects loaded)")
-        status["services"]["project_service"] = {
-            "status": "ok",
-            "total_projects": total_projects,
-        }
-    except Exception as e:
-        error_msg = f"Failed to initialize project service: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        status["services"]["project_service"] = {"status": "error", "error": str(e)}
-    
-    # Step 7: Initialize File Service
-    logger.info("Initializing file service...")
-    try:
-        from backend.services import get_file_service
-        file_svc = get_file_service()
-        logger.info(f"✓ File service initialized (upload dir: {file_svc.upload_dir})")
-        status["services"]["file_service"] = {
-            "status": "ok",
-            "upload_dir": str(file_svc.upload_dir),
-        }
-    except Exception as e:
-        error_msg = f"Failed to initialize file service: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        status["services"]["file_service"] = {"status": "error", "error": str(e)}
-    
-    # Step 8: Initialize Export Service
-    logger.info("Initializing export service...")
-    try:
-        from backend.services import get_export_service
-        export_svc = get_export_service()
-        logger.info(f"✓ Export service initialized (export dir: {export_svc.export_dir})")
-        status["services"]["export_service"] = {
-            "status": "ok",
-            "export_dir": str(export_svc.export_dir),
-        }
-    except Exception as e:
-        error_msg = f"Failed to initialize export service: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        status["services"]["export_service"] = {"status": "error", "error": str(e)}
-    
-    # Step 9: Initialize PDF Service
-    logger.info("Initializing PDF analysis service...")
-    try:
-        from backend.services import get_pdf_service
-        pdf_svc = get_pdf_service()
-        extraction_methods = []
-        if hasattr(pdf_svc, '_pdfplumber') and pdf_svc._pdfplumber:
-            extraction_methods.append("pdfplumber")
-        if hasattr(pdf_svc, '_pypdf') and pdf_svc._pypdf:
-            extraction_methods.append("PyPDF2")
-        logger.info(f"✓ PDF service initialized (extraction: {', '.join(extraction_methods) if extraction_methods else 'none'})")
-        status["services"]["pdf_service"] = {
-            "status": "ok",
-            "extraction_methods": extraction_methods,
-        }
-    except Exception as e:
-        error_msg = f"Failed to initialize PDF service: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        status["services"]["pdf_service"] = {"status": "error", "error": str(e)}
-    
-    # Step 10: Initialize Data Service
-    logger.info("Initializing data service...")
-    try:
-        from backend.data_service import get_data_service
-        data_svc = get_data_service()
-        logger.info("✓ Data service initialized")
-        status["services"]["data_service"] = {"status": "ok"}
-    except Exception as e:
-        error_msg = f"Failed to initialize data service: {e}"
-        logger.error(f"✗ {error_msg}")
-        status["errors"].append(error_msg)
-        status["services"]["data_service"] = {"status": "error", "error": str(e)}
-    
-    # Summary
-    services_ok = sum(1 for s in status["services"].values() if s.get("status") == "ok")
-    services_total = len(status["services"])
-    
-    logger.info("=" * 60)
-    
-    if status["errors"]:
-        logger.error(f"Service initialization complete with {len(status['errors'])} error(s)")
-        logger.error(f"Services OK: {services_ok}/{services_total}")
-        for err in status["errors"]:
-            logger.error(f"  • {err}")
-    else:
-        logger.info(f"✓ All {services_total} services initialized successfully")
-    
-    logger.info("=" * 60)
-    
-    status["completed_at"] = get_timestamp()
-    status["services_ok"] = services_ok
-    status["services_total"] = services_total
-    status["success"] = len(status["errors"]) == 0
-    
-    return status
-
-
-# ============================================================================
-# FLASK APPLICATION FACTORY
-# ============================================================================
-
-def create_app() -> Flask:
-    """
-    Create and configure the Flask application.
-    
-    IMPORTANT: All services must be initialized BEFORE calling this function.
-    Routes are registered during app creation and depend on service instances.
-    
-    Returns:
-        Configured Flask application instance
-    """
-    app = Flask(__name__)
-    
-    app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "graphico-pro-flask-secret-change-in-production")
-    app.config["MAX_CONTENT_LENGTH"] = MAX_REQUEST_SIZE_BYTES
-    app.config["DEBUG"] = SERVER_DEBUG
-    app.config["TESTING"] = False
-    app.config["JSON_SORT_KEYS"] = False
-    app.config["JSONIFY_PRETTYPRINT_REGULAR"] = SERVER_DEBUG
-    app.config["SESSION_COOKIE_SECURE"] = is_production()
-    app.config["SESSION_COOKIE_HTTPONLY"] = True
-    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-    
-    CORS(
-        app,
-        origins=ALLOWED_ORIGINS,
-        methods=ALLOWED_METHODS,
-        allow_headers=ALLOWED_HEADERS,
-        supports_credentials=ALLOWED_CREDENTIALS,
-        max_age=86400,
-        expose_headers=["Content-Disposition", "X-Response-Time", "X-Request-ID", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
-    )
-    
-    logger.info("CORS configured for origins: %s", ALLOWED_ORIGINS)
-    
-    @app.before_request
-    def before_request():
-        g.start_time = get_utc_now()
-        g.request_id = request.headers.get("X-Request-ID", "")
-        if request.method == "OPTIONS": return None
-        client_ip = get_client_ip(request)
-        user_agent = request.headers.get("User-Agent", "Unknown")
-        logger.info(f"→ {request.method} {request.path} from {client_ip} [{user_agent[:80]}]")
-        content_length = request.content_length or 0
-        if content_length > MAX_REQUEST_SIZE_BYTES:
-            logger.warning(f"Request too large: {content_length} bytes from {client_ip}")
-            return error_response(message=ApiMessage.FILE_TOO_LARGE, error_code=ErrorCode.FILE_TOO_LARGE, status_code=HttpStatus.BAD_REQUEST)
-    
-    @app.after_request
-    def after_request(response):
-        if hasattr(g, "start_time"):
-            duration = (get_utc_now() - g.start_time).total_seconds()
-            response.headers["X-Response-Time"] = f"{duration:.3f}s"
-        if hasattr(g, "request_id") and g.request_id:
-            response.headers["X-Request-ID"] = g.request_id
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()"
-        if is_production():
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
-        if request.path.startswith(API_PREFIX):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-            response.headers["Pragma"] = "no-cache"
-        if request.method != "OPTIONS":
-            status_emoji = "✓" if response.status_code < 400 else "✗"
-            logger.info(f"← {status_emoji} {response.status_code} {request.method} {request.path}")
-        return response
-    
-    @app.teardown_request
-    def teardown_request(exception=None):
-        if exception:
-            logger.error(f"Request teardown with exception: {exception}", exc_info=True)
-    
-    # Error handlers
-    @app.errorhandler(400)
-    def handle_bad_request(error):
-        logger.warning(f"400 Bad Request: {error}")
-        return _make_error_response(message=str(error) or ApiMessage.BAD_REQUEST, error_code=ErrorCode.VALIDATION_INVALID_FORMAT, status_code=HttpStatus.BAD_REQUEST)
-    
-    @app.errorhandler(401)
-    def handle_unauthorized(error):
-        logger.warning(f"401 Unauthorized: {request.path}")
-        return _make_error_response(message=ApiMessage.UNAUTHORIZED, error_code=ErrorCode.AUTH_MISSING_TOKEN, status_code=HttpStatus.UNAUTHORIZED)
-    
-    @app.errorhandler(403)
-    def handle_forbidden(error):
-        logger.warning(f"403 Forbidden: {request.path}")
-        return _make_error_response(message=ApiMessage.FORBIDDEN, error_code=ErrorCode.AUTH_INSUFFICIENT_PERMISSIONS, status_code=HttpStatus.FORBIDDEN)
-    
-    @app.errorhandler(404)
-    def handle_not_found(error):
-        logger.warning(f"404 Not Found: {request.method} {request.path}")
-        return _make_error_response(message=ApiMessage.NOT_FOUND, error_code=ErrorCode.RESOURCE_NOT_FOUND, status_code=HttpStatus.NOT_FOUND)
-    
-    @app.errorhandler(405)
-    def handle_method_not_allowed(error):
-        logger.warning(f"405 Method Not Allowed: {request.method} {request.path}")
-        return _make_error_response(message=ApiMessage.METHOD_NOT_ALLOWED, error_code=ErrorCode.VALIDATION_INVALID_FORMAT, status_code=HttpStatus.METHOD_NOT_ALLOWED)
-    
-    @app.errorhandler(413)
-    def handle_request_too_large(error):
-        logger.warning("413 Request Entity Too Large")
-        return _make_error_response(message=ApiMessage.FILE_TOO_LARGE, error_code=ErrorCode.FILE_TOO_LARGE, status_code=HttpStatus.BAD_REQUEST)
-    
-    @app.errorhandler(429)
-    def handle_too_many_requests(error):
-        logger.warning(f"429 Too Many Requests from {get_client_ip(request)}")
-        return _make_error_response(message=ApiMessage.RATE_LIMITED, error_code=ErrorCode.AI_RATE_LIMITED, status_code=HttpStatus.TOO_MANY_REQUESTS)
-    
-    @app.errorhandler(500)
-    def handle_internal_error(error):
-        logger.error(f"500 Internal Server Error: {error}", exc_info=True)
-        return _make_error_response(message=ApiMessage.INTERNAL_ERROR, error_code=ErrorCode.SERVER_INTERNAL, status_code=HttpStatus.INTERNAL_SERVER_ERROR)
-    
-    @app.errorhandler(502)
-    def handle_bad_gateway(error):
-        logger.error(f"502 Bad Gateway: {error}")
-        return _make_error_response(message="Upstream service unavailable", error_code=ErrorCode.AI_PROVIDER_ERROR, status_code=HttpStatus.BAD_GATEWAY)
-    
-    @app.errorhandler(503)
-    def handle_service_unavailable(error):
-        logger.error(f"503 Service Unavailable: {error}")
-        return _make_error_response(message=ApiMessage.SERVICE_UNAVAILABLE, error_code=ErrorCode.SERVER_INTERNAL, status_code=HttpStatus.SERVICE_UNAVAILABLE)
-    
-    def _make_error_response(message, error_code, status_code):
-        response_data, _ = error_response(message=message, error_code=error_code, status_code=status_code)
-        response = jsonify(response_data)
-        response.status_code = status_code
-        return response
-    
-    # Register routes
-    logger.info("Registering API routes...")
-    from backend.routes import register_routes, register_error_handlers, register_middleware
-    register_middleware(app)
-    register_routes(app)
-    register_error_handlers(app)
-    logger.info("✓ Routes registered successfully")
-    
-    return app
-
-
-# ============================================================================
-# STARTUP BANNER
-# ============================================================================
-
-def print_startup_banner(init_status: dict):
-    banner = r"""
-╔══════════════════════════════════════════════════════════════════════╗
-║                                                                      ║
-║   ██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗██╗ ██████╗ ██████╗      ║
-║  ██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██║  ██║██║██╔════╝██╔═══██╗     ║
-║  ██║  ███╗██████╔╝███████║██████╔╝███████║██║██║     ██║   ██║     ║
-║  ██║   ██║██╔══██╗██╔══██║██╔═══╝ ██╔══██║██║██║     ██║   ██║     ║
-║  ╚██████╔╝██║  ██║██║  ██║██║     ██║  ██║██║╚██████╗╚██████╔╝     ║
-║   ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═╝ ╚═════╝ ╚═════╝      ║
-║                                                                      ║
-║          The AI Operating System for Creativity                      ║
-║                                                                      ║
-╚══════════════════════════════════════════════════════════════════════╝
-"""
-    logger.info(banner)
-    logger.info("─" * 60)
-    logger.info("SERVER INFORMATION")
-    logger.info("─" * 60)
-    logger.info(f"  Environment:    {'PRODUCTION' if is_production() else 'DEVELOPMENT'}")
-    logger.info(f"  Debug Mode:     {SERVER_DEBUG}")
-    logger.info(f"  Server URL:     http://{SERVER_HOST}:{SERVER_PORT}")
-    logger.info(f"  API Base URL:   http://{SERVER_HOST}:{SERVER_PORT}{API_PREFIX}")
-    logger.info(f"  Health Check:   http://{SERVER_HOST}:{SERVER_PORT}/api/health")
-    logger.info(f"  Allowed Origins: {', '.join(ALLOWED_ORIGINS)}")
-    logger.info("─" * 60)
-    logger.info("SERVICE STATUS")
-    logger.info("─" * 60)
-    services = init_status.get("services", {})
-    for service_name, service_info in services.items():
-        status_icon = "✓" if service_info.get("status") == "ok" else "✗"
-        display_name = service_name.replace("_", " ").title()
-        logger.info(f"  {status_icon} {display_name}")
-    warnings = init_status.get("warnings", [])
-    if warnings:
-        logger.info("─" * 60)
-        logger.info("WARNINGS")
-        logger.info("─" * 60)
-        for warning in warnings: logger.warning(f"  ⚠ {warning}")
-    errors = init_status.get("errors", [])
-    if errors:
-        logger.info("─" * 60)
-        logger.info("ERRORS")
-        logger.info("─" * 60)
-        for error in errors: logger.error(f"  ✗ {error}")
-    logger.info("─" * 60)
-    if init_status.get("success", False):
-        logger.info("✓ All services initialized successfully")
-        logger.info("  Ready to accept connections")
-    else:
-        logger.warning("⚠ Server starting with initialization errors")
-        logger.warning("  Some features may not work correctly")
-    logger.info("─" * 60)
-    logger.info("")
-
-
-# ============================================================================
-# ENTRY POINTS
-# ============================================================================
-
-# Initialize services
-_init_status = initialize_all_services()
-
-# Create Flask app
-app = create_app()
-
-
-def main():
-    """Run as Flask development server."""
-    print_startup_banner(_init_status)
-    try:
-        logger.info(f"Starting Flask server on {SERVER_HOST}:{SERVER_PORT}...")
-        app.run(host=SERVER_HOST, port=SERVER_PORT, debug=SERVER_DEBUG, threaded=True, use_reloader=False)
-    except KeyboardInterrupt:
-        logger.info("Shutdown signal received (Ctrl+C)")
-    except OSError as e:
-        if "Address already in use" in str(e):
-            logger.error(f"Port {SERVER_PORT} is already in use.")
-        else:
-            logger.error(f"Server error: {e}", exc_info=True)
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Server failed: {e}", exc_info=True)
-        sys.exit(1)
-    finally:
-        logger.info("Graphico Pro backend server stopped")
-
-
-# Streamlit entry point
-def run_streamlit():
-    """Run the Flask app via Streamlit using streamlit-lambdas."""
-    try:
-        import streamlit as st
-        from streamlit_lambdas import streamlit_lambdas
+            return None
         
-        st.set_page_config(page_title="Graphico Pro", page_icon="📊", layout="wide")
-        st.title("Graphico Pro — Backend Server")
-        st.caption(f"API running at http://{SERVER_HOST}:{SERVER_PORT}{API_PREFIX}")
-        st.success("✓ All services initialized — ready to accept API requests")
+        if is_file_download and resp.status_code == 200:
+            return resp
+        
+        if resp.status_code == 200:
+            return resp.json()
+        
+        try:
+            err = resp.json()
+            st.error(err.get("message", "Unknown error"))
+        except:
+            st.error(f"HTTP {resp.status_code}")
+        return None
+    except Exception as e:
+        st.error(f"Connection error: {e}")
+        return None
+
+# ============================================================================
+# AUTHENTICATION
+# ============================================================================
+
+def login_page():
+    st.title("Graphico Pro")
+    st.subheader("The AI Operating System for Creativity")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("---")
+        st.markdown("### Sign in to your workspace")
+        
+        # Get Google OAuth URL
+        resp = api_request("GET", "/auth/google/url")
+        if resp and resp.get("success"):
+            auth_url = resp["data"]["auth_url"]
+            st.markdown(f"[![Sign in with Google](https://developers.google.com/identity/images/btn_google_signin_dark_normal_web.png)]({auth_url})")
         
         st.markdown("---")
-        st.subheader("Service Status")
-        for name, info in _init_status.get("services", {}).items():
-            icon = "✅" if info.get("status") == "ok" else "❌"
-            st.write(f"{icon} **{name.replace('_', ' ').title()}**")
-        
-        st.markdown("---")
-        st.subheader("API Endpoints")
-        st.code(f"Health: GET /api/v1/health\nStatus: GET /api/v1/status\nAuth: POST /api/v1/auth/google/callback\nChat: POST /api/v1/ai/chat\nData: GET /api/v1/data/preview\nReport: POST /api/v1/data/report", language="text")
-        
-        # Wrap Flask as Streamlit handler
-        streamlit_lambdas(app, port=SERVER_PORT)
-        
-    except ImportError:
-        logger.error("streamlit-lambdas not installed. Run: pip install streamlit-lambdas")
-        print("To run on Streamlit, install: pip install streamlit streamlit-lambdas")
-        print("Then run: streamlit run backend/backend.py")
+        st.caption("Or paste your session token:")
+        token_input = st.text_input("Session Token", type="password", key="token_input")
+        if st.button("Submit Token"):
+            st.session_state.session_token = token_input.strip()
+            resp = api_request("GET", "/auth/me")
+            if resp and resp.get("success"):
+                st.session_state.user = resp["data"]["user"]
+                st.rerun()
 
+    # Handle OAuth callback
+    params = st.query_params
+    if "code" in params:
+        code = params["code"]
+        resp = api_request("POST", "/auth/google/callback", data={"code": code, "redirect_uri": st.query_params.get("redirect_uri", "")})
+        if resp and resp.get("success"):
+            st.session_state.session_token = resp["data"]["session_token"]
+            st.session_state.user = resp["data"]["user"]
+            st.query_params.clear()
+            st.rerun()
 
-# Auto-detect if running via Streamlit
-if __name__ == "__main__":
-    # Check if Streamlit is the runner
-    if "STREAMLIT" in os.environ or "streamlit" in sys.argv[0].lower():
-        run_streamlit()
-    else:
-        main()
+# ============================================================================
+# MAIN APP
+# ============================================================================
+
+def main_app():
+    # Sidebar
+    with st.sidebar:
+        st.image("https://via.placeholder.com/40x40.png?text=GP", width=40)
+        st.title("Graphico Pro")
+        
+        if st.session_state.user:
+            st.write(f"👤 {st.session_state.user.get('name', 'User')}")
+            st.write(f"📧 {st.session_state.user.get('email', '')}")
+        
+        page = st.radio("Navigation", ["💬 Chat", "📊 Data Analysis", "📁 Projects", "⚙️ Settings"])
+        
+        if st.button("🚪 Logout"):
+            api_request("POST", "/auth/logout")
+            st.session_state.clear()
+            st.rerun()
+    
+    if page == "💬 Chat":
+        chat_page()
+    elif page == "📊 Data Analysis":
+        data_page()
+    elif page == "📁 Projects":
+        projects_page()
+    elif page == "⚙️ Settings":
+        settings_page()
+
+# ============================================================================
+# CHAT PAGE
+# ============================================================================
+
+def chat_page():
+    st.title("💬 Workspace Chat")
+    
+    # Model selector and project selector
+    col1, col2 = st.columns(2)
+    with col1:
+        load_models()
+        models_list = [m["model"] for m in st.session_state.available_models if m.get("type") == "chat"]
+        display_names = [f"{m['display_name']} ({m['provider']})" for m in st.session_state.available_models if m.get("type") == "chat"]
+        selected_model = st.selectbox("AI Model", display_names, key="model_select")
+        selected_model_id = models_list[display_names.index(selected_model)] if display_names else None
+    
+    with col2:
+        load_projects()
+        project_names = ["None"] + [p["name"] for p in st.session_state.projects]
+        selected_project_name = st.selectbox("Save to Project", project_names, key="project_select")
+        if selected_project_name != "None":
+            for p in st.session_state.projects:
+                if p["name"] == selected_project_name:
+                    st.session_state.active_project_id = p["project_id"]
+                    break
+        else:
+            st.session_state.active_project_id = None
+    
+    # Chat history
+    chat_container = st.container(height=400)
+    with chat_container:
+        for msg in st.session_state.chat_messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "user":
+                st.chat_message("user").write(content)
+            elif role == "assistant":
+                st.chat_message("assistant").markdown(content)
+            elif role == "system":
+                st.error(content)
+    
+    # Chat input
+    if prompt := st.chat_input("Message the assistant…"):
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+        
+        messages_payload = [{"role": m["role"], "content": m["content"]} for m in st.session_state.chat_messages]
+        
+        data = {"messages": messages_payload}
+        if selected_model_id:
+            data["model"] = selected_model_id
+        if st.session_state.active_project_id:
+            data["project_id"] = st.session_state.active_project_id
+        
+        with st.spinner("Thinking..."):
+            resp = api_request("POST", "/ai/chat", data=data)
+        
+        if resp and resp.get("success"):
+            st.session_state.chat_messages.append({"role": "assistant", "content": resp["data"]["content"]})
+        else:
+            st.session_state.chat_messages.append({"role": "system", "content": "Failed to get response"})
+        
+        st.rerun()
+    
+    if st.button("Clear Chat"):
+        st.session_state.chat_messages = []
+        st.rerun()
+
+# ============================================================================
+# DATA PAGE
+# ============================================================================
+
+def data_page():
+    st.title("📊 Data Analysis")
+    
+    # Upload section
+    st.subheader("Upload Data")
+    uploaded_file = st.file_uploader("Choose a CSV or JSON file", type=["csv", "json"])
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        project_name = st.text_input("Project name (optional)", value="Data Analysis Project")
+    with col2:
+        if uploaded_file and st.button("Upload & Analyze"):
+            # Create project
+            resp = api_request("POST", "/projects", data={"name": project_name, "project_type": "data"})
+            if resp and resp.get("success"):
+                project_id = resp["data"]["project_id"]
+                # Upload file
+                files = {"file": (uploaded_file.name, uploaded_file.getvalue())}
+                upload_resp = requests.post(
+                    f"{API_URL}/files/upload",
+                    headers={"Authorization": f"Bearer {st.session_state.session_token}"},
+                    files=files,
+                    data={"project_id": project_id}
+                )
+                if upload_resp.status_code == 201:
+                    upload_data = upload_resp.json()
+                    st.session_state.data_file_path = upload_data["data"]["path"]
+                    st.success("File uploaded!")
+                    st.rerun()
+    
+    # Manual file path
+    st.divider()
+    file_path = st.text_input("Or enter file path directly", value=st.session_state.data_file_path or "")
+    if file_path and st.button("Load Data"):
+        st.session_state.data_file_path = file_path
+        resp = api_request("GET", f"/data/preview?file_path={file_path}")
+        if resp and resp.get("success"):
+            st.session_state.data_preview = resp["data"]
+    
+    # Display data
+    if st.session_state.data_preview:
+        preview = st.session_state.data_preview
+        
+        # Stats
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Rows", preview.get("row_count", 0))
+        col2.metric("Columns", len(preview.get("columns", [])))
+        total_null = sum(preview.get("null_counts", {}).values())
+        col3.metric("Missing Values", total_null)
+        numeric_cols = len(preview.get("basic_stats", {}))
+        col4.metric("Numeric Columns", numeric_cols)
+        
+        # Table
+        st.subheader("Data Preview")
+        if preview.get("sample_rows"):
+            df = pd.DataFrame(preview["sample_rows"])
+            st.dataframe(df, use_container_width=True)
+        
+        # Actions
+        st.subheader("Actions")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            if st.button("🧹 Clean Data"):
+                resp = api_request("POST", "/data/clean", data={"file_path": st.session_state.data_file_path})
+                if resp and resp.get("success"):
+                    st.session_state.data_file_path = resp["data"]["file_path"]
+                    st.success("Data cleaned!")
+                    st.rerun()
+        
+        with col2:
+            if st.button("📈 Plot"):
+                st.session_state.show_plot = True
+        
+        with col3:
+            if st.button("📄 Report PDF"):
+                resp = requests.post(
+                    f"{API_URL}/data/report",
+                    headers={"Authorization": f"Bearer {st.session_state.session_token}", "Content-Type": "application/json"},
+                    json={"file_path": st.session_state.data_file_path, "include_plots": True}
+                )
+                if resp.status_code == 200:
+                    st.download_button("⬇️ Download PDF", resp.content, "report.pdf", "application/pdf")
+        
+        with col4:
+            if st.button("📥 Export CSV"):
+                resp = requests.post(
+                    f"{API_URL}/data/export",
+                    headers={"Authorization": f"Bearer {st.session_state.session_token}", "Content-Type": "application/json"},
+                    json={"file_path": st.session_state.data_file_path, "format": "csv"}
+                )
+                if resp.status_code == 200:
+                    st.download_button("⬇️ Download CSV", resp.content, "export.csv", "text/csv")
+        
+        with col5:
+            if st.button("📥 Export JSON"):
+                resp = requests.post(
+                    f"{API_URL}/data/export",
+                    headers={"Authorization": f"Bearer {st.session_state.session_token}", "Content-Type": "application/json"},
+                    json={"file_path": st.session_state.data_file_path, "format": "json"}
+                )
+                if resp.status_code == 200:
+                    st.download_button("⬇️ Download JSON", resp.content, "export.json", "application/json")
+        
+        # Plot section
+        if st.session_state.get("show_plot"):
+            st.subheader("Plot Configuration")
+            cols = preview.get("columns", [])
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                plot_type = st.selectbox("Plot Type", ["scatter", "line", "bar", "histogram", "box", "pie", "heatmap", "area"])
+            with col2:
+                x_col = st.selectbox("X Axis", ["auto"] + cols)
+            with col3:
+                y_col = st.selectbox("Y Axis", ["auto"] + cols)
+            
+            if st.button("Generate Plot"):
+                resp = api_request("POST", "/data/plot", data={
+                    "file_path": st.session_state.data_file_path,
+                    "plot_type": plot_type,
+                    "x_column": None if x_col == "auto" else x_col,
+                    "y_column": None if y_col == "auto" else y_col,
+                })
+                if resp and resp.get("success"):
+                    plot_data = json.loads(resp["data"]["plot_json"])
+                    fig = go.Figure(plot_data)
+                    st.plotly_chart(fig, use_container_width=True)
+
+# ============================================================================
+# PROJECTS PAGE
+# ============================================================================
+
+def projects_page():
+    st.title("📁 Projects")
+    
+    if st.button("🔄 Refresh"):
+        load_projects()
+        st.rerun()
+    
+    load_projects()
+    
+    if not st.session_state.projects:
+        st.info("No projects yet. Create one from the Chat or Data pages.")
+        return
+    
+    for project in st.session_state.projects:
+        with st.expander(f"📌 {project['name']} ({project.get('status', 'active')})"):
+            st.write(f"**Description:** {project.get('description', 'No description')}")
+            st.write(f"**Type:** {project.get('project_type', 'general')}")
+            st.write(f"**Files:** {len(project.get('files', []))}")
+            st.write(f"**Updated:** {project.get('updated_at', '')}")
+            
+            if st.button(f"💬 Open Chat — {project['name']}"):
+                st.session_state.active_project_id = project["project_id"]
+                # Load history
+                resp = api_request("GET", f"/projects/{project['project_id']}/history")
+                if resp and resp.get("success"):
+                    st.session_state.chat_messages = resp["data"]["history"]
+                st.success("Project loaded! Go to Chat page.")
+            
+            if st.button(f"🗑️ Delete — {project['name']}"):
+                resp = api_request("DELETE", f"/projects/{project['project_id']}")
+                if resp and resp.get("success"):
+                    st.success("Project deleted!")
+                    st.rerun()
+
+# ============================================================================
+# SETTINGS PAGE
+# ============================================================================
+
+def settings_page():
+    st.title("⚙️ Settings")
+    
+    st.subheader("Backend Status")
+    resp = api_request("GET", "/health")
+    if resp:
+        st.json(resp)
+    
+    st.subheader("Available AI Models")
+    load_models()
+    for model in st.session_state.available_models:
+        st.write(f"• **{model['display_name']}** ({model['provider']}) — {model['type']}")
+
+# ============================================================================
+# HELPERS
+# ============================================================================
+
+def load_models():
+    if not st.session_state.available_models:
+        resp = api_request("GET", "/ai/models")
+        if resp and resp.get("success"):
+            st.session_state.available_models = resp["data"].get("models", [])
+
+def load_projects():
+    resp = api_request("GET", "/projects")
+    if resp and resp.get("success"):
+        st.session_state.projects = resp["data"].get("items", [])
+
+# ============================================================================
+# MAIN
+# ============================================================================
+
+if st.session_state.session_token and st.session_state.user:
+    main_app()
+else:
+    login_page()
