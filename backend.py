@@ -16,7 +16,7 @@ import time
 # CONFIGURATION
 # ============================================================================
 
-API_BASE_URL = "http://localhost:8501"
+API_BASE_URL = "https://graphico-backend.streamlit.app"
 API_URL = f"{API_BASE_URL}/api/v1"
 
 st.set_page_config(
